@@ -82,6 +82,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
       <div className="flex flex-col">
         <header className="flex h-14 items-center gap-4 border-b bg-white px-4 lg:h-[60px] lg:px-6 sticky top-0 z-10">
           <Sheet open={open} onOpenChange={setOpen}>
+            {/* @ts-ignore */}
             <SheetTrigger asChild>
               <Button
                 variant="outline"

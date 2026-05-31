@@ -92,7 +92,7 @@ export default function LeadsPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>অটোমেশন টুল</Label>
-                <Select value={scrapeData.automation_tool} onValueChange={(val) => setScrapeData({...scrapeData, automation_tool: val})}>
+                <Select value={scrapeData.automation_tool} onValueChange={(val: string | null) => setScrapeData({...scrapeData, automation_tool: val || ""})}>
                   <SelectTrigger className="border-pink-200 bg-pink-50/50">
                     <SelectValue placeholder="সিলেক্ট করুন" />
                   </SelectTrigger>
@@ -106,7 +106,7 @@ export default function LeadsPage() {
 
               <div className="space-y-2">
                 <Label>টার্গেট প্ল্যাটফর্ম</Label>
-                <Select value={scrapeData.platform} onValueChange={(val) => setScrapeData({...scrapeData, platform: val})}>
+                <Select value={scrapeData.platform} onValueChange={(val: string | null) => setScrapeData({...scrapeData, platform: val || ""})}>
                   <SelectTrigger>
                     <SelectValue placeholder="সিলেক্ট করুন" />
                   </SelectTrigger>

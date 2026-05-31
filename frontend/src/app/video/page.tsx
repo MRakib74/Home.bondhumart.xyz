@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Video, Play, Loader2, Upload } from "lucide-react";
+import { Video, Play, Loader2, Upload, AlertCircle } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -87,7 +87,7 @@ export default function VideoAIPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label>AI প্রোভাইডার</Label>
-                <Select value={formData.provider} onValueChange={(val) => setFormData({...formData, provider: val})}>
+                <Select value={formData.provider} onValueChange={(val: string | null) => setFormData({...formData, provider: val || ""})}>
                   <SelectTrigger className="border-purple-300 bg-purple-50">
                     <SelectValue placeholder="সিলেক্ট করুন" />
                   </SelectTrigger>
@@ -101,7 +101,7 @@ export default function VideoAIPage() {
 
               <div className="space-y-2">
                 <Label>AI এভাটার (Avatar)</Label>
-                <Select value={formData.avatar_id} onValueChange={(val) => setFormData({...formData, avatar_id: val})}>
+                <Select value={formData.avatar_id} onValueChange={(val: string | null) => setFormData({...formData, avatar_id: val || ""})}>
                   <SelectTrigger>
                     <SelectValue placeholder="সিলেক্ট করুন" />
                   </SelectTrigger>
@@ -115,7 +115,7 @@ export default function VideoAIPage() {
 
               <div className="space-y-2">
                 <Label>AI ভয়েস (Voice)</Label>
-                <Select value={formData.voice_id} onValueChange={(val) => setFormData({...formData, voice_id: val})}>
+                <Select value={formData.voice_id} onValueChange={(val: string | null) => setFormData({...formData, voice_id: val || ""})}>
                   <SelectTrigger>
                     <SelectValue placeholder="সিলেক্ট করুন" />
                   </SelectTrigger>
@@ -129,7 +129,7 @@ export default function VideoAIPage() {
 
             <div className="space-y-2">
               <Label>ব্যাকগ্রাউন্ড</Label>
-              <Select value={formData.background} onValueChange={(val) => setFormData({...formData, background: val})}>
+              <Select value={formData.background} onValueChange={(val: string | null) => setFormData({...formData, background: val || ""})}>
                 <SelectTrigger>
                   <SelectValue placeholder="সিলেক্ট করুন" />
                 </SelectTrigger>

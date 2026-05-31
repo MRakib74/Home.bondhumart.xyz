@@ -92,7 +92,7 @@ export default function ImageAIPage() {
 
             <div className="space-y-2">
               <Label>ইমেজের স্টাইল</Label>
-              <Select value={formData.style} onValueChange={(val) => setFormData({...formData, style: val})}>
+              <Select value={formData.style} onValueChange={(val: string | null) => setFormData({...formData, style: val || ""})}>
                 <SelectTrigger>
                   <SelectValue placeholder="সিলেক্ট করুন" />
                 </SelectTrigger>

@@ -103,7 +103,7 @@ export default function ContentPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>AI প্রোভাইডার</Label>
-                <Select value={formData.provider} onValueChange={(val) => setFormData({...formData, provider: val})}>
+                <Select value={formData.provider} onValueChange={(val: string | null) => setFormData({...formData, provider: val || ""})}>
                   <SelectTrigger className="border-orange-200 bg-orange-50/50">
                     <SelectValue placeholder="সিলেক্ট করুন" />
                   </SelectTrigger>
@@ -119,7 +119,7 @@ export default function ContentPage() {
 
               <div className="space-y-2">
                 <Label>কন্টেন্টের ধরন</Label>
-                <Select value={formData.content_type} onValueChange={(val) => setFormData({...formData, content_type: val})}>
+                <Select value={formData.content_type} onValueChange={(val: string | null) => setFormData({...formData, content_type: val || ""})}>
                   <SelectTrigger>
                     <SelectValue placeholder="সিলেক্ট করুন" />
                   </SelectTrigger>
