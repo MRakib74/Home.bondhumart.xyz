@@ -49,6 +49,8 @@ export default function BroadcastPage() {
     } finally {
       setLoading(false);
     }
+  };
+
   const sendBroadcast = async () => {
     if (!broadcastData.message_content) {
       alert("মেসেজ খালি রাখা যাবে না!");
