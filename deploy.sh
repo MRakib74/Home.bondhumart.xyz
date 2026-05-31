@@ -14,8 +14,8 @@ echo "================================================"
 DOMAIN="command.bondhumart.cloud"
 FRONTEND_PORT=8086
 BACKEND_PORT=8087
-INSTALL_DIR="/home/bondhumart-cmd/htdocs/command.bondhumart.cloud"
-REPO_URL="https://github.com/YOUR_USERNAME/bondhu-command-center.git"  # ← এটা পরিবর্তন করুন
+INSTALL_DIR="/home/bondhumart/htdocs/command.bondhumart.cloud"
+REPO_URL="https://github.com/MRakib74/bondhu-command-center.git"
 
 # ---- ধাপ ১: ডিরেক্টরি তৈরি ----
 echo ""
