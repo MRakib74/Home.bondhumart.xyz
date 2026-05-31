@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from config import settings as app_settings
-from routers import products, orders, content, video, leads, broadcast, analytics, images, settings, bondhumart
+from routers import products, orders, content, video, leads, broadcast, analytics, images, settings, bondhumart, db_live
 
 app = FastAPI(
     title=app_settings.PROJECT_NAME,
@@ -29,6 +29,7 @@ app.include_router(broadcast.router, prefix=f"{app_settings.API_V1_STR}/broadcas
 app.include_router(analytics.router, prefix=f"{app_settings.API_V1_STR}/analytics", tags=["📊 Analytics"])
 app.include_router(settings.router, prefix=f"{app_settings.API_V1_STR}/settings", tags=["⚙️ System Settings"])
 app.include_router(bondhumart.router, prefix=f"{app_settings.API_V1_STR}/bondhumart", tags=["🔗 Bondhumart Integration"])
+app.include_router(db_live.router, prefix=f"{app_settings.API_V1_STR}/live", tags=["📊 BondhuMart Live DB"])
 
 @app.get("/", tags=["Health Check"])
 async def root():
