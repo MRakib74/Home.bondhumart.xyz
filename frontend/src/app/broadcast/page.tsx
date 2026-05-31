@@ -139,7 +139,7 @@ export default function BroadcastPage() {
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label>কাকে পাঠাবেন?</Label>
-              <Select value={broadcastData.target_segment} onValueChange={(val: string) => setBroadcastData({...broadcastData, target_segment: val || ""})}>
+              <Select value={broadcastData.target_segment} onValueChange={(val: string | null) => setBroadcastData({...broadcastData, target_segment: val || ""})}>
                 <SelectTrigger className="bg-white">
                   <SelectValue placeholder="টার্গেট সিলেক্ট করুন" />
                 </SelectTrigger>
@@ -154,7 +154,7 @@ export default function BroadcastPage() {
 
             <div className="space-y-2">
               <Label>কোন মাধ্যমে পাঠাবেন?</Label>
-              <Select value={broadcastData.platform} onValueChange={(val: string) => setBroadcastData({...broadcastData, platform: val || ""})}>
+              <Select value={broadcastData.platform} onValueChange={(val: string | null) => setBroadcastData({...broadcastData, platform: val || ""})}>
                 <SelectTrigger className="bg-blue-50 border-blue-200 text-blue-900">
                   <SelectValue placeholder="মাধ্যম সিলেক্ট করুন" />
                 </SelectTrigger>
