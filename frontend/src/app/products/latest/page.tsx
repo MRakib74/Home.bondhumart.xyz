@@ -4,19 +4,39 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Package, RefreshCw, Box, Tag, DollarSign, Activity } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Package, RefreshCw, Box, Tag, DollarSign, Activity, Plus } from "lucide-react";
 
 export default function LatestProductsPage() {
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [newProduct, setNewProduct] = useState({
+    name: "",
+    price: "",
+    buying_price: "",
+    stock: "100",
+    image_url: ""
+  });
+  const [isAdding, setIsAdding] = useState(false);
+
   const fetchProducts = async () => {
     setLoading(true);
     setError(null);
     try {
-      // Production-এ /api proxy হয়ে ব্যাকএন্ডে যাবে (Next.js rewrites এর মাধ্যমে)
-      const res = await fetch("/api/v1/live/products?limit=100");
+      const res = await fetch("http://127.0.0.1:8000/api/v1/live/products?limit=100");
       if (!res.ok) throw new Error("সার্ভার থেকে প্রোডাক্ট আনতে সমস্যা হয়েছে।");
       const data = await res.json();
       setProducts(data);
@@ -24,6 +44,33 @@ export default function LatestProductsPage() {
       setError(err.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleAddProduct = async () => {
+    if(!newProduct.name || !newProduct.price) return;
+    setIsAdding(true);
+    try {
+      const res = await fetch("http://127.0.0.1:8000/api/v1/live/products/custom", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: newProduct.name,
+          price: Number(newProduct.price),
+          buying_price: Number(newProduct.buying_price || 0),
+          stock: Number(newProduct.stock || 100),
+          image_url: newProduct.image_url || null
+        })
+      });
+      if(res.ok) {
+        setIsDialogOpen(false);
+        setNewProduct({ name: "", price: "", buying_price: "", stock: "100", image_url: "" });
+        fetchProducts(); // Refresh list
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsAdding(false);
     }
   };
 
@@ -42,10 +89,82 @@ export default function LatestProductsPage() {
             এই প্রোডাক্টগুলো সরাসরি আপনার মেইন সাইট (BondhuMart) থেকে রিয়েল-টাইমে আসছে। AI এই ডেটা ব্যবহার করে কাস্টমারদের রিপ্লাই দেবে।
           </p>
         </div>
-        <Button onClick={fetchProducts} disabled={loading} variant="outline" className="gap-2">
-          <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-          {loading ? "রিফ্রেশ হচ্ছে..." : "রিফ্রেশ করুন"}
-        </Button>
+        <div className="flex gap-2">
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="bg-indigo-600 hover:bg-indigo-700 gap-2">
+                <Plus className="h-4 w-4" /> নতুন প্রোডাক্ট এড করুন
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>ম্যানুয়াল প্রোডাক্ট যোগ করুন</DialogTitle>
+                <DialogDescription>
+                  এই প্রোডাক্টটি BondhuMart-এ যাবে না, শুধু Command Center এবং AI-এর ব্যবহারের জন্য থাকবে।
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="space-y-2">
+                  <Label>প্রোডাক্টের নাম *</Label>
+                  <Input 
+                    placeholder="যেমন: Exclusive T-Shirt" 
+                    value={newProduct.name}
+                    onChange={(e) => setNewProduct({...newProduct, name: e.target.value})}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>বিক্রয় মূল্য (৳) *</Label>
+                    <Input 
+                      type="number" 
+                      placeholder="500" 
+                      value={newProduct.price}
+                      onChange={(e) => setNewProduct({...newProduct, price: e.target.value})}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>কেনা দাম (৳)</Label>
+                    <Input 
+                      type="number" 
+                      placeholder="350" 
+                      value={newProduct.buying_price}
+                      onChange={(e) => setNewProduct({...newProduct, buying_price: e.target.value})}
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>স্টক পরিমাণ</Label>
+                    <Input 
+                      type="number" 
+                      value={newProduct.stock}
+                      onChange={(e) => setNewProduct({...newProduct, stock: e.target.value})}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>ছবির লিংক (URL)</Label>
+                    <Input 
+                      placeholder="https://..." 
+                      value={newProduct.image_url}
+                      onChange={(e) => setNewProduct({...newProduct, image_url: e.target.value})}
+                    />
+                  </div>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsDialogOpen(false)}>ক্যান্সেল</Button>
+                <Button onClick={handleAddProduct} disabled={isAdding || !newProduct.name || !newProduct.price}>
+                  {isAdding ? "অ্যাড হচ্ছে..." : "অ্যাড করুন"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          <Button onClick={fetchProducts} disabled={loading} variant="outline" className="gap-2">
+            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+            {loading ? "রিফ্রেশ হচ্ছে..." : "রিফ্রেশ করুন"}
+          </Button>
+        </div>
       </div>
 
       {error ? (
@@ -114,7 +233,10 @@ export default function LatestProductsPage() {
                 
                 <div className="bg-slate-50 p-3 border-t text-xs flex justify-between items-center text-slate-500">
                   <span>স্টক: <strong className={product.stock <= (product.low_stock_threshold || 5) ? "text-red-500" : "text-green-600"}>{product.stock} পিস</strong></span>
-                  <span>ID: {product.id}</span>
+                  <div className="flex gap-2 items-center">
+                    {product.is_custom && <Badge variant="outline" className="text-[10px] h-5">Custom (CC)</Badge>}
+                    <span>ID: {product.id}</span>
+                  </div>
                 </div>
               </Card>
             ))

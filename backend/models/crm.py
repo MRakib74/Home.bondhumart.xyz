@@ -87,3 +87,19 @@ class CCOrder(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     customer = relationship("Customer", back_populates="cc_orders")
+
+class CCProduct(Base):
+    """Command Center-এর ম্যানুয়াল প্রোডাক্ট (BondhuMart-এ নেই এমন)"""
+    __tablename__ = "cc_products"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, index=True)
+    price = Column(Float)
+    buying_price = Column(Float, default=0.0)
+    stock = Column(Integer, default=100)
+    low_stock_threshold = Column(Integer, default=5)
+    image_url = Column(String, nullable=True)
+    status = Column(String, default="active")
+    
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
