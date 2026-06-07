@@ -261,7 +261,7 @@ export default function OrdersPage() {
                   
                   <div className="space-y-2 pt-2">
                     <Label>কুরিয়ার সার্ভিস</Label>
-                    <Select value={newOrder.courier_name} onValueChange={v => setNewOrder({...newOrder, courier_name: v})}>
+                    <Select value={newOrder.courier_name} onValueChange={(v: string | null) => setNewOrder({...newOrder, courier_name: v || "steadfast"})}>
                       <SelectTrigger>
                         <SelectValue placeholder="কুরিয়ার সিলেক্ট করুন" />
                       </SelectTrigger>
