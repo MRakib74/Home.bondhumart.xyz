@@ -72,10 +72,10 @@ fi
 
 # PM2 দিয়ে Backend রান
 pm2 delete bcc-api 2>/dev/null || true
-pm2 start venv/bin/uvicorn \
+pm2 start venv/bin/python \
     --name "bcc-api" \
     --cwd $INSTALL_DIR/backend \
-    -- main:app --host 127.0.0.1 --port $BACKEND_PORT
+    -- -m uvicorn main:app --host 127.0.0.1 --port $BACKEND_PORT
 
 echo "✅ FastAPI Backend চালু: http://127.0.0.1:$BACKEND_PORT"
 
