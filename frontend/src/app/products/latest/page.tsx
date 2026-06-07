@@ -91,11 +91,14 @@ export default function LatestProductsPage() {
         </div>
         <div className="flex gap-2">
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="bg-indigo-600 hover:bg-indigo-700 gap-2">
-                <Plus className="h-4 w-4" /> নতুন প্রোডাক্ট এড করুন
-              </Button>
-            </DialogTrigger>
+            {/* @ts-ignore */}
+            <DialogTrigger
+              render={
+                <Button className="bg-indigo-600 hover:bg-indigo-700 gap-2">
+                  <Plus className="h-4 w-4" /> নতুন প্রোডাক্ট এড করুন
+                </Button>
+              }
+            />
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>ম্যানুয়াল প্রোডাক্ট যোগ করুন</DialogTitle>
