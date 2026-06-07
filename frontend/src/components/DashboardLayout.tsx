@@ -8,7 +8,6 @@ import {
   Home, 
   Package, 
   PenTool, 
-  Video, 
   Image as ImageIcon,
   Users, 
   Send, 
@@ -29,7 +28,7 @@ const navItems = [
   { name: "Orders", href: "/orders", icon: BarChart },
   { name: "Content AI", href: "/content", icon: PenTool },
   { name: "Image AI", href: "/images", icon: ImageIcon },
-  { name: "Video AI", href: "/video", icon: Video },
+
   { name: "Leads", href: "/leads", icon: Users },
   { name: "Broadcast", href: "/broadcast", icon: Send },
   { name: "Admin Panel", href: "/admin", icon: User },

@@ -99,7 +99,7 @@ async def list_products(
         for cp in custom_products_db:
             custom_products.append({
                 "id": f"cc-{cp.id}",
-                "name": cp.name + " (Custom)",
+                "name": cp.name,
                 "price": cp.price,
                 "buying_price": cp.buying_price,
                 "profit_margin": round(cp.price - cp.buying_price, 2),

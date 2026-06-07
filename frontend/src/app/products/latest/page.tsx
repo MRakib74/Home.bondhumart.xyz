@@ -234,7 +234,6 @@ export default function LatestProductsPage() {
                 <div className="bg-slate-50 p-3 border-t text-xs flex justify-between items-center text-slate-500">
                   <span>স্টক: <strong className={product.stock <= (product.low_stock_threshold || 5) ? "text-red-500" : "text-green-600"}>{product.stock} পিস</strong></span>
                   <div className="flex gap-2 items-center">
-                    {product.is_custom && <Badge variant="outline" className="text-[10px] h-5">Custom (CC)</Badge>}
                     <span>ID: {product.id}</span>
                   </div>
                 </div>

@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from config import settings as app_settings
-from routers import products, orders, content, video, leads, broadcast, analytics, images, settings, bondhumart, db_live
+from routers import products, orders, content, leads, broadcast, analytics, images, settings, bondhumart, db_live
 from database import engine
 from models import crm
 
@@ -28,7 +28,7 @@ app.include_router(products.router, prefix=f"{app_settings.API_V1_STR}/products"
 app.include_router(orders.router, prefix=f"{app_settings.API_V1_STR}/orders", tags=["🛍️ Order Automation"])
 app.include_router(content.router, prefix=f"{app_settings.API_V1_STR}/content", tags=["📝 Content AI"])
 app.include_router(images.router, prefix=f"{app_settings.API_V1_STR}/images", tags=["🎨 Image AI"])
-app.include_router(video.router, prefix=f"{app_settings.API_V1_STR}/video", tags=["🎬 Video AI"])
+
 app.include_router(leads.router, prefix=f"{app_settings.API_V1_STR}/leads", tags=["👥 Lead Generation"])
 app.include_router(broadcast.router, prefix=f"{app_settings.API_V1_STR}/broadcast", tags=["📡 Broadcast & Checker"])
 app.include_router(analytics.router, prefix=f"{app_settings.API_V1_STR}/analytics", tags=["📊 Analytics"])

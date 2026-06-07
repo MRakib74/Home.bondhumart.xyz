@@ -1,79 +1,83 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
+from typing import List, Optional
 from pydantic import BaseModel
-from typing import List, Dict, Any
-from datetime import datetime, timedelta
+from database import get_db
+from models.crm import CCOrder, Customer
+import json
 
 router = APIRouter()
 
-class OrderData(BaseModel):
-    order_id: str
+class OrderItemInput(BaseModel):
+    product_id: str
+    product_name: str
+    quantity: int
+    price: float
+
+class OrderCreateInput(BaseModel):
     customer_name: str
     phone: str
-    product_name: str
-    amount: float
-    status: str # "pending", "completed", "cancelled"
-    order_date: datetime
+    address: str
+    district: str
+    items: List[OrderItemInput]
+    total_amount: float
+    courier_name: Optional[str] = "steadfast"
 
-@router.post("/segment", summary="অর্ডার এনালাইসিস এবং কাস্টমার সেগমেন্টেশন")
-async def analyze_orders(orders: List[OrderData]):
+@router.post("/create", summary="কমান্ড সেন্টারে ম্যানুয়ালি অর্ডার তৈরি করুন")
+async def create_cc_order(order: OrderCreateInput, db: Session = Depends(get_db)):
     """
-    Bondhumart ডাটাবেজ থেকে অর্ডার এনে কাস্টমারদের ভাগ করবে।
+    এই অর্ডারটি BondhuMart-এ যাবে না। এটি শুধু Command Center-এর নিজস্ব ডাটাবেজে থাকবে 
+    এবং এখান থেকেই কুরিয়ার (Steadfast/Pathao) হ্যান্ডেল করা হবে।
     """
-    segments = {
-        "hot_buyers": [],         # যারা লাস্ট ৭ দিনে কিনেছে
-        "repeated_customers": [], # যারা একাধিকবার কিনেছে
-        "inactive_30_days": [],   # যারা ৩০ দিনের বেশি সময় ধরে কিছু কিনেনি
-        "cancelled_orders": []    # যাদের অর্ডার ক্যান্সেল হয়েছে (ফলোআপের জন্য)
-    }
+    # ১. কাস্টমার চেক বা তৈরি করা
+    customer = db.query(Customer).filter(Customer.phone == order.phone).first()
+    if not customer:
+        customer = Customer(
+            name=order.customer_name,
+            phone=order.phone,
+            address=order.address,
+            district=order.district
+        )
+        db.add(customer)
+        db.commit()
+        db.refresh(customer)
     
-    phone_counts = {}
+    # ২. অর্ডার তৈরি করা
+    items_json = [item.model_dump() for item in order.items]
     
-    # 1. Count repeated customers
-    for order in orders:
-        if order.phone in phone_counts:
-            phone_counts[order.phone] += 1
-        else:
-            phone_counts[order.phone] = 1
-
-    # 2. Segmenting Logic
-    now = datetime.now()
-    for order in orders:
-        days_since_order = (now - order.order_date.replace(tzinfo=None)).days
-        
-        customer_info = {
-            "name": order.customer_name,
-            "phone": order.phone,
-            "last_product": order.product_name
-        }
-
-        if order.status.lower() == "cancelled":
-            segments["cancelled_orders"].append(customer_info)
-            continue
-            
-        if phone_counts[order.phone] > 1 and customer_info not in segments["repeated_customers"]:
-            segments["repeated_customers"].append(customer_info)
-
-        if days_since_order <= 7:
-            segments["hot_buyers"].append(customer_info)
-        elif days_since_order > 30:
-            segments["inactive_30_days"].append(customer_info)
-
+    new_order = CCOrder(
+        customer_id=customer.id,
+        items=items_json,
+        total_amount=order.total_amount,
+        status="pending",
+        courier_name=order.courier_name,
+        created_by="admin"
+    )
+    db.add(new_order)
+    db.commit()
+    db.refresh(new_order)
+    
     return {
-        "message": "কাস্টমার সেগমেন্টেশন সম্পন্ন হয়েছে!",
-        "total_analyzed": len(orders),
-        "segments": segments
+        "status": "success", 
+        "message": "Command Center-এ অর্ডার সফলভাবে তৈরি হয়েছে!", 
+        "order_id": new_order.id
     }
 
-@router.post("/followup", summary="অর্ডার অনুযায়ী ফলোআপ মেসেজ")
-async def generate_followup(customer_name: str, product_name: str, segment_type: str):
-    """
-    কাস্টমারের স্ট্যাটাস বুঝে AI-কে দিয়ে পার্সোনালাইজড ফলোআপ মেসেজ জেনারেট করবে।
-    """
-    if segment_type == "inactive_30_days":
-        msg = f"আসসালামু আলাইকুম {customer_name} ভাইয়া! অনেকদিন আপনার কোনো খবর নেই। আপনি আগে আমাদের থেকে '{product_name}' নিয়েছিলেন। আজ আপনার জন্য স্পেশাল ৫% ডিসকাউন্ট আছে!"
-    elif segment_type == "repeated_customers":
-        msg = f"হ্যালো {customer_name} ভাইয়া! আপনি আমাদের রেগুলার কাস্টমার, তাই আপনার জন্য আমাদের নতুন কালেকশনে থাকছে ফ্রি ডেলিভারি!"
-    else:
-        msg = f"জি ভাইয়া, আপনার {product_name} এর অর্ডারটির আপডেট জানতে মেসেজ দিন।"
-        
-    return {"status": "success", "followup_message": msg}
+@router.get("/list", summary="কমান্ড সেন্টারের তৈরি অর্ডারগুলো দেখুন")
+async def get_cc_orders(db: Session = Depends(get_db), limit: int = 50):
+    orders = db.query(CCOrder).order_by(CCOrder.created_at.desc()).limit(limit).all()
+    
+    result = []
+    for o in orders:
+        result.append({
+            "id": o.id,
+            "customer_name": o.customer.name,
+            "phone": o.customer.phone,
+            "address": o.customer.address,
+            "items": o.items,
+            "total_amount": o.total_amount,
+            "status": o.status,
+            "courier_name": o.courier_name,
+            "created_at": o.created_at
+        })
+    return result
