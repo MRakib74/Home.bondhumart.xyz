@@ -1,4 +1,4 @@
-import { Users, ShoppingCart, Activity, RefreshCcw } from "lucide-react"
+import { Users, ShoppingCart, Activity, RefreshCcw, Send } from "lucide-react"
 
 const stats = [
   { name: 'Total Customers', value: '1,632', change: '+12%', icon: Users },
