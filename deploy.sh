@@ -12,7 +12,7 @@ echo "🚀 BondhuOS Deploy শুরু হচ্ছে..."
 echo "================================================"
 
 INSTALL_DIR="/home/bondhumart-command/htdocs/command.bondhumart.cloud"
-PORT=8086
+PORT=3000
 
 echo "📁 ডিরেক্টরি চেক করা হচ্ছে..."
 mkdir -p $INSTALL_DIR
