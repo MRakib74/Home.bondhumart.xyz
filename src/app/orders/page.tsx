@@ -18,6 +18,7 @@ interface OrderItem {
   source: string
   courierName?: string
   trackingNo?: string
+  consignmentId?: string | number
   createdAt: string
   shippedAt?: string
 }
@@ -179,7 +180,7 @@ export default function OrdersPage() {
         product: colMap.product ? String(row[colMap.product] || "") : "",
         quantity: colMap.quantity ? Number(row[colMap.quantity]) || 1 : 1,
         amount: colMap.amount ? Number(row[colMap.amount]) || 0 : 0,
-        deliveryCharge: colMap.delivery ? Number(row[colMap.delivery]) || 80 : 80,
+        deliveryCharge: colMap.delivery && row[colMap.delivery] !== undefined ? Number(row[colMap.delivery]) : 0,
         status: 'confirmed' as const, // Imported orders go straight to confirmed
         source: 'Website Import',
         createdAt: new Date().toISOString()
@@ -227,6 +228,114 @@ export default function OrdersPage() {
     } : o)
     saveOrders(updated)
     setIsEditModalOpen(false)
+  }
+
+  const handlePrintInvoice = () => {
+    if (!selectedOrder) return;
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return alert('Please allow popups to print invoices.');
+
+    const subtotal = selectedOrder.amount;
+    const delivery = selectedOrder.deliveryCharge;
+    const total = subtotal + delivery;
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Invoice - ${selectedOrder.id}</title>
+        <style>
+          body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0 auto; padding: 20px; width: 380px; color: #111; font-size: 14px; }
+          .header { background: linear-gradient(135deg, #0ea5e9, #10b981); color: white; padding: 20px; border-radius: 12px 12px 0 0; display: flex; justify-content: space-between; align-items: center; }
+          .header h1 { margin: 0; font-size: 20px; }
+          .header p { margin: 4px 0 0; font-size: 12px; opacity: 0.9; }
+          .invoice-badge { background: rgba(255,255,255,0.2); padding: 4px 10px; border-radius: 20px; font-weight: bold; font-size: 12px; }
+          .details-box { display: flex; justify-content: space-between; border: 1px solid #e4e4e7; border-top: none; padding: 15px; background: #fafafa; }
+          .box { width: 48%; }
+          .box-title { font-size: 11px; color: #71717a; text-transform: uppercase; font-weight: bold; margin-bottom: 5px; }
+          .box-text { font-size: 13px; margin: 2px 0; font-weight: 500; }
+          .table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+          .table th { border-bottom: 2px solid #e4e4e7; padding: 8px 4px; text-align: left; font-size: 12px; color: #71717a; }
+          .table td { border-bottom: 1px dashed #e4e4e7; padding: 10px 4px; font-size: 13px; font-weight: 500; }
+          .summary { margin-top: 15px; border-top: 2px solid #e4e4e7; padding-top: 10px; }
+          .summary-row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 13px; color: #52525b; }
+          .total-row { background: #18181b; color: white; padding: 12px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; font-weight: bold; font-size: 16px; margin-top: 10px; }
+          .footer { text-align: center; margin-top: 25px; font-size: 11px; color: #a1a1aa; border-top: 1px dashed #e4e4e7; padding-top: 15px; }
+          .courier-info { text-align: center; background: #f4f4f5; padding: 10px; border-radius: 6px; margin-top: 15px; font-size: 12px; font-weight: bold; border: 1px dashed #d4d4d8; }
+          @media print { body { width: 100%; padding: 0; } }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div>
+            <h1>BondhuMart</h1>
+            <p>Trusted Online Shop</p>
+          </div>
+          <div style="text-align: right;">
+            <div class="invoice-badge">INVOICE</div>
+            <p style="margin-top: 8px; font-family: monospace;">${selectedOrder.id.slice(-6)}</p>
+          </div>
+        </div>
+        
+        <div class="details-box">
+          <div class="box">
+            <div class="box-title">Seller</div>
+            <div class="box-text">BondhuMart</div>
+            <div class="box-text" style="color: #52525b; font-size: 11px; margin-top: 4px;">Dhaka, Bangladesh</div>
+          </div>
+          <div class="box" style="border-left: 2px solid #10b981; padding-left: 10px;">
+            <div class="box-title">Customer</div>
+            <div class="box-text">${selectedOrder.customerName}</div>
+            <div class="box-text" style="color: #0ea5e9;">📞 ${selectedOrder.phone}</div>
+            <div class="box-text" style="color: #52525b; font-size: 11px; margin-top: 4px;">${selectedOrder.address} ${selectedOrder.district ? ', ' + selectedOrder.district : ''}</div>
+          </div>
+        </div>
+
+        <table class="table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Product</th>
+              <th style="text-align: center;">Qty</th>
+              <th style="text-align: right;">Price</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>1</td>
+              <td>${selectedOrder.product}</td>
+              <td style="text-align: center;">${selectedOrder.quantity}</td>
+              <td style="text-align: right;">৳ ${subtotal}</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="summary">
+          <div class="summary-row"><span>Subtotal</span><span>৳ ${subtotal}</span></div>
+          <div class="summary-row"><span>Delivery Charge</span><span>৳ ${delivery}</span></div>
+          <div class="total-row"><span>TOTAL (COD)</span><span style="color: #10b981;">৳ ${total}</span></div>
+        </div>
+
+        ${selectedOrder.trackingNo ? `
+        <div class="courier-info">
+          Courier: ${selectedOrder.courierName?.toUpperCase()} | Tracking: ${selectedOrder.trackingNo}
+        </div>` : ''}
+
+        <div class="footer">
+          <strong style="color: #10b981; font-size: 13px;">Thank you for your order! 🎉</strong><br/>
+          <div style="margin-top: 6px;">Delivery Time: 3-5 Working Days</div>
+          <div style="margin-top: 4px;">BondhuOS System &bull; ${new Date().toLocaleDateString()}</div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    printWindow.document.write(html);
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => {
+      printWindow.print();
+    }, 250);
   }
 
   const deleteSingleOrder = (id: string) => {
@@ -321,6 +430,7 @@ export default function OrdersPage() {
                 status: 'shipped' as const,
                 courierName: selectedCourier,
                 trackingNo: apiResult.tracking_code || 'STDF-' + Date.now(),
+                consignmentId: apiResult.consignment_id,
                 shippedAt: new Date().toISOString(),
                 phone: formatPhoneForCourier(o.phone)
               }
@@ -672,21 +782,31 @@ export default function OrdersPage() {
                 <div><label className="block text-xs text-zinc-400 mb-1">Delivery (৳)</label><input type="number" value={eDelivery} onChange={e => setEDelivery(e.target.value)} className="w-full bg-zinc-900 border border-zinc-800 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500" /></div>
               </div>
 
-              {selectedOrder.status === 'shipped' && (
-                <div className="bg-emerald-500/5 border border-emerald-500/20 p-3 rounded-lg mt-4">
-                  <p className="text-xs text-emerald-400 font-medium mb-1">Courier Details</p>
-                  <p className="text-sm text-zinc-300 capitalize">Courier: {selectedOrder.courierName}</p>
-                  <p className="text-sm text-zinc-300">Tracking No: <span className="font-mono text-blue-400">{selectedOrder.trackingNo}</span></p>
+              {['shipped', 'delivered', 'returned', 'returned_received'].includes(selectedOrder.status) && (
+                <div className="bg-emerald-500/5 border border-emerald-500/20 p-3 rounded-lg mt-4 grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-xs text-emerald-400 font-medium mb-1">Courier Details</p>
+                    <p className="text-sm text-zinc-300 capitalize">Courier: {selectedOrder.courierName}</p>
+                    <p className="text-sm text-zinc-300">Tracking No: <span className="font-mono text-blue-400">{selectedOrder.trackingNo}</span></p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-emerald-400 font-medium mb-1">Courier ID</p>
+                    <p className="text-sm text-zinc-300 font-mono">{selectedOrder.consignmentId || 'N/A'}</p>
+                  </div>
                 </div>
               )}
             </div>
-            <div className="p-5 border-t border-zinc-800 flex justify-between">
+            <div className="p-5 border-t border-zinc-800 flex justify-between items-center">
               <button onClick={() => deleteSingleOrder(selectedOrder.id)} className="px-4 py-2 text-sm text-red-500 hover:bg-red-500/10 rounded-lg flex items-center gap-2">
                 <Trash2 className="h-4 w-4" /> Delete Order
               </button>
               <div className="flex gap-2">
-                <button onClick={() => setIsEditModalOpen(false)} className="px-4 py-2 text-sm text-zinc-400 hover:text-white">Cancel</button>
-                <button onClick={saveEditedOrder} className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2.5 rounded-xl text-sm font-medium">Save Changes</button>
+                <button onClick={handlePrintInvoice} className="bg-zinc-800 hover:bg-zinc-700 text-white px-5 py-2.5 rounded-xl text-sm font-medium transition-colors">
+                  Print Invoice
+                </button>
+                <button onClick={saveEditedOrder} className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2.5 rounded-xl text-sm font-medium transition-colors">
+                  Save Changes
+                </button>
               </div>
             </div>
           </div>
