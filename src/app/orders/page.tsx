@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { ShoppingCart, Plus, CheckCircle2, Truck, Search, Upload, X, Package, ArrowRight } from "lucide-react"
+import { ShoppingCart, Plus, CheckCircle2, Truck, Search, Upload, X, Package, ArrowRight, Trash2 } from "lucide-react"
 import * as XLSX from "xlsx"
 
 interface OrderItem {
@@ -171,6 +171,15 @@ export default function OrdersPage() {
   }
 
   // --- WORKFLOW ACTIONS ---
+  const handleDeleteSelected = () => {
+    if (selectedIds.length === 0) return alert('অর্ডার সিলেক্ট করুন!')
+    if (confirm(`আপনি কি নিশ্চিত যে ${selectedIds.length} টি অর্ডার ডিলিট করতে চান?`)) {
+      const updated = orders.filter(o => !selectedIds.includes(o.id))
+      saveOrders(updated)
+      setSelectedIds([])
+    }
+  }
+
   const moveToConfirmed = () => {
     if (selectedIds.length === 0) return alert('অর্ডার সিলেক্ট করুন!')
     const updated = orders.map(o => selectedIds.includes(o.id) ? { ...o, status: 'confirmed' as const } : o)
@@ -323,7 +332,12 @@ export default function OrdersPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
           <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search by name, phone, or product..." className="w-full bg-zinc-900 border border-zinc-800 text-white rounded-lg pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-blue-500" />
         </div>
-        <div className="flex gap-2 w-full sm:w-auto justify-end">
+        <div className="flex flex-wrap gap-2 w-full sm:w-auto justify-end">
+          {selectedIds.length > 0 && (
+            <button onClick={handleDeleteSelected} className="flex items-center gap-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20 px-4 py-2.5 rounded-xl text-sm font-medium transition-all active:scale-95">
+              <Trash2 className="h-4 w-4" /> Delete ({selectedIds.length})
+            </button>
+          )}
           {activeTab === 'new' && selectedIds.length > 0 && (
             <button onClick={moveToConfirmed} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 rounded-xl text-sm font-medium transition-all active:scale-95 shadow-lg shadow-blue-500/20">
               <CheckCircle2 className="h-4 w-4" /> Confirm Selected ({selectedIds.length})
@@ -343,9 +357,7 @@ export default function OrdersPage() {
           <table className="w-full text-left text-sm text-zinc-400">
             <thead className="text-xs uppercase bg-zinc-900/50 text-zinc-500 border-b border-zinc-800">
               <tr>
-                {(activeTab === 'new' || activeTab === 'confirmed') && (
-                  <th className="px-4 py-4 w-12"><input type="checkbox" checked={selectedIds.length === filtered.length && filtered.length > 0} onChange={selectAll} className="accent-blue-500 w-4 h-4 cursor-pointer" /></th>
-                )}
+                <th className="px-4 py-4 w-12"><input type="checkbox" checked={selectedIds.length === filtered.length && filtered.length > 0} onChange={selectAll} className="accent-blue-500 w-4 h-4 cursor-pointer" /></th>
                 <th className="px-4 py-4 font-medium whitespace-nowrap">Order ID</th>
                 <th className="px-4 py-4 font-medium">Customer</th>
                 <th className="px-4 py-4 font-medium">Product</th>
@@ -359,9 +371,7 @@ export default function OrdersPage() {
             <tbody className="divide-y divide-zinc-800/50">
               {filtered.length > 0 ? filtered.map(o => (
                 <tr key={o.id} className="hover:bg-zinc-900/30 transition-colors group">
-                  {(activeTab === 'new' || activeTab === 'confirmed') && (
-                    <td className="px-4 py-3"><input type="checkbox" checked={selectedIds.includes(o.id)} onChange={() => toggleSelect(o.id)} className="accent-blue-500 w-4 h-4 cursor-pointer" /></td>
-                  )}
+                  <td className="px-4 py-3"><input type="checkbox" checked={selectedIds.includes(o.id)} onChange={() => toggleSelect(o.id)} className="accent-blue-500 w-4 h-4 cursor-pointer" /></td>
                   <td className="px-4 py-3 text-zinc-300 font-mono text-xs whitespace-nowrap">{o.id.slice(0, 12)}</td>
                   <td className="px-4 py-3 min-w-[200px]">
                     <div className="text-zinc-200 font-medium group-hover:text-blue-400 transition-colors">{o.customerName}</div>

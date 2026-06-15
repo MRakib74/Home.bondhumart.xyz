@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { apiKey, secretKey, orders } = body;
+    const { apiKey, secretKey, baseUrl, orders } = body;
 
     const safeApiKey = apiKey ? apiKey.trim() : '';
     const safeSecretKey = secretKey ? secretKey.trim() : '';
@@ -11,6 +11,8 @@ export async function POST(req: Request) {
     if (!safeApiKey || !safeSecretKey) {
       return NextResponse.json({ error: 'Steadfast API Key and Secret Key are required.' }, { status: 400 });
     }
+
+    const apiUrl = baseUrl ? baseUrl.replace(/\/$/, '') : 'https://portal.packzy.com/api/v1';
 
     if (!orders || !Array.isArray(orders) || orders.length === 0) {
       return NextResponse.json({ error: 'No orders provided for courier entry.' }, { status: 400 });
@@ -31,7 +33,7 @@ export async function POST(req: Request) {
           note: `Product: ${order.product} (x${order.quantity})`
         };
 
-        const response = await fetch('https://portal.steadfast.com.bd/api/v1/create_order', {
+        const response = await fetch(`${apiUrl}/create_order`, {
           method: 'POST',
           headers: {
             'Api-Key': safeApiKey,
