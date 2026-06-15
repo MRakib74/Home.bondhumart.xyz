@@ -259,9 +259,13 @@ export default function CustomersPage() {
                 className="w-full bg-zinc-950 border border-zinc-800 text-white rounded-xl pl-9 pr-4 py-2 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all placeholder:text-zinc-600"
               />
             </div>
-            
-            {/* Filter Custom Columns Dropdown */}
-            <div className="relative">
+            <div className="flex items-center gap-3">
+              <div className="text-sm text-zinc-400 font-medium hidden sm:block bg-zinc-950 px-3 py-1.5 rounded-lg border border-zinc-800">
+                Showing <span className="text-white">{filteredCustomers.length}</span> of <span className="text-white">{customers.length}</span>
+              </div>
+              
+              {/* Filter Custom Columns Dropdown */}
+              <div className="relative">
               <button 
                 onClick={() => setIsFilterOpen(!isFilterOpen)}
                 className="flex items-center gap-2 px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-xl hover:bg-zinc-800 transition-colors text-sm font-medium text-zinc-300"
@@ -294,19 +298,25 @@ export default function CustomersPage() {
 
           {/* Dynamic Status Tabs */}
           <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide">
-            {TABS.map(tab => (
-              <button 
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`whitespace-nowrap px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border ${
-                  activeTab === tab 
-                    ? 'bg-blue-600 text-white border-blue-600' 
-                    : 'bg-zinc-950 border-zinc-800 hover:bg-zinc-800 text-zinc-400 hover:text-white'
-                }`}
-              >
-                {tab}
-              </button>
-            ))}
+            {TABS.map(tab => {
+              const count = tab === 'All' ? customers.length : customers.filter(c => c.status === tab).length;
+              return (
+                <button 
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={`whitespace-nowrap px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border flex items-center gap-2 ${
+                    activeTab === tab 
+                      ? 'bg-blue-600 text-white border-blue-600 shadow-lg shadow-blue-900/20' 
+                      : 'bg-zinc-950 border-zinc-800 hover:bg-zinc-800 text-zinc-400 hover:text-white'
+                  }`}
+                >
+                  {tab}
+                  <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-bold ${activeTab === tab ? 'bg-white/20 text-white' : 'bg-zinc-800 text-zinc-500'}`}>
+                    {count}
+                  </span>
+                </button>
+              )
+            })}
           </div>
         </div>
 
@@ -315,7 +325,7 @@ export default function CustomersPage() {
           <table className="w-full text-sm text-left min-w-[800px]">
             <thead className="text-xs uppercase bg-zinc-900 border-b border-zinc-800 text-zinc-400 whitespace-nowrap sticky top-0 z-10">
               <tr>
-                <th className="px-4 py-3 font-medium w-12">
+                <th className="px-4 py-3 font-medium w-12 text-center">
                   <input 
                     type="checkbox" 
                     checked={selectedIds.length === filteredCustomers.length && filteredCustomers.length > 0}
@@ -323,7 +333,7 @@ export default function CustomersPage() {
                       if (e.target.checked) setSelectedIds(filteredCustomers.map(c => c.id))
                       else setSelectedIds([])
                     }}
-                    className="rounded bg-zinc-900 border-zinc-700 text-blue-500 focus:ring-blue-500"
+                    className="w-4 h-4 rounded border-zinc-700 bg-zinc-900/50 text-blue-500 focus:ring-blue-500/50 focus:ring-offset-zinc-950 cursor-pointer transition-all"
                   />
                 </th>
                 {visibleCols.customerInfo && <th className="px-4 py-3 font-medium">Customer Info</th>}
@@ -350,7 +360,7 @@ export default function CustomersPage() {
                     onClick={() => openCustomerDetails(customer)}
                     className={`transition-colors group whitespace-nowrap cursor-pointer ${selectedIds.includes(customer.id) ? 'bg-blue-900/20' : 'hover:bg-zinc-900/80'}`}
                   >
-                    <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                    <td className="px-4 py-3 text-center" onClick={(e) => e.stopPropagation()}>
                       <input 
                         type="checkbox" 
                         checked={selectedIds.includes(customer.id)}
@@ -358,7 +368,7 @@ export default function CustomersPage() {
                           if (e.target.checked) setSelectedIds([...selectedIds, customer.id])
                           else setSelectedIds(selectedIds.filter(id => id !== customer.id))
                         }}
-                        className="rounded bg-zinc-900 border-zinc-700 text-blue-500 focus:ring-blue-500"
+                        className="w-4 h-4 rounded border-zinc-700 bg-zinc-900/50 text-blue-500 focus:ring-blue-500/50 focus:ring-offset-zinc-950 cursor-pointer transition-all"
                       />
                     </td>
                     {visibleCols.customerInfo && (
@@ -403,13 +413,6 @@ export default function CustomersPage() {
           </table>
         </div>
 
-        {/* Pagination */}
-        <div className="p-3 border-t border-zinc-800 flex items-center justify-between text-sm text-zinc-500 bg-zinc-900 mt-auto">
-          <div>Showing {filteredCustomers.length} of {customers.length} entries</div>
-          <div className="flex gap-2">
-            <button className="px-3 py-1 border border-zinc-800 rounded hover:bg-zinc-800 transition-colors text-zinc-300 text-xs">Previous</button>
-            <button className="px-3 py-1 border border-zinc-800 rounded hover:bg-zinc-800 transition-colors text-zinc-300 text-xs">Next</button>
-          </div>
         </div>
       </div>
 
