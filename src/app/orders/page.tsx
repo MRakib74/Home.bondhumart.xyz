@@ -230,41 +230,40 @@ export default function OrdersPage() {
     setIsEditModalOpen(false)
   }
 
-  const handlePrintInvoice = () => {
-    if (!selectedOrder) return;
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) return alert('Please allow popups to print invoices.');
+  const getInvoiceStyles = () => `
+    <style>
+      body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0 auto; padding: 0; background: #fff; color: #111; font-size: 14px; }
+      .invoice-page { width: 380px; margin: 0 auto; padding: 20px; box-sizing: border-box; page-break-after: always; }
+      .invoice-page:last-child { page-break-after: auto; }
+      .header { background: linear-gradient(135deg, #0ea5e9, #10b981); color: white; padding: 20px; border-radius: 12px 12px 0 0; display: flex; justify-content: space-between; align-items: center; }
+      .header h1 { margin: 0; font-size: 20px; }
+      .header p { margin: 4px 0 0; font-size: 12px; opacity: 0.9; }
+      .invoice-badge { background: rgba(255,255,255,0.2); padding: 4px 10px; border-radius: 20px; font-weight: bold; font-size: 12px; }
+      .details-box { display: flex; justify-content: space-between; border: 1px solid #e4e4e7; border-top: none; padding: 15px; background: #fafafa; }
+      .box { width: 48%; }
+      .box-title { font-size: 11px; color: #71717a; text-transform: uppercase; font-weight: bold; margin-bottom: 5px; }
+      .box-text { font-size: 13px; margin: 2px 0; font-weight: 500; }
+      .table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+      .table th { border-bottom: 2px solid #e4e4e7; padding: 8px 4px; text-align: left; font-size: 12px; color: #71717a; }
+      .table td { border-bottom: 1px dashed #e4e4e7; padding: 10px 4px; font-size: 13px; font-weight: 500; }
+      .summary { margin-top: 15px; border-top: 2px solid #e4e4e7; padding-top: 10px; }
+      .summary-row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 13px; color: #52525b; }
+      .total-row { background: #18181b; color: white; padding: 12px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; font-weight: bold; font-size: 16px; margin-top: 10px; }
+      .courier-info { text-align: center; background: #f4f4f5; padding: 10px; border-radius: 6px; margin-top: 15px; font-size: 13px; font-weight: bold; border: 1px dashed #d4d4d8; }
+      @media print { 
+        body { width: 100%; } 
+        .invoice-page { width: 100%; max-width: 400px; padding: 10px; }
+      }
+    </style>
+  `;
 
-    const subtotal = selectedOrder.amount;
-    const delivery = selectedOrder.deliveryCharge;
+  const generateInvoiceHTML = (o: OrderItem) => {
+    const subtotal = o.amount;
+    const delivery = o.deliveryCharge;
     const total = subtotal + delivery;
 
-    const html = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>Invoice - ${selectedOrder.id}</title>
-        <style>
-          body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0 auto; padding: 20px; width: 380px; color: #111; font-size: 14px; }
-          .header { background: linear-gradient(135deg, #0ea5e9, #10b981); color: white; padding: 20px; border-radius: 12px 12px 0 0; display: flex; justify-content: space-between; align-items: center; }
-          .header h1 { margin: 0; font-size: 20px; }
-          .header p { margin: 4px 0 0; font-size: 12px; opacity: 0.9; }
-          .invoice-badge { background: rgba(255,255,255,0.2); padding: 4px 10px; border-radius: 20px; font-weight: bold; font-size: 12px; }
-          .details-box { display: flex; justify-content: space-between; border: 1px solid #e4e4e7; border-top: none; padding: 15px; background: #fafafa; }
-          .box { width: 48%; }
-          .box-title { font-size: 11px; color: #71717a; text-transform: uppercase; font-weight: bold; margin-bottom: 5px; }
-          .box-text { font-size: 13px; margin: 2px 0; font-weight: 500; }
-          .table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-          .table th { border-bottom: 2px solid #e4e4e7; padding: 8px 4px; text-align: left; font-size: 12px; color: #71717a; }
-          .table td { border-bottom: 1px dashed #e4e4e7; padding: 10px 4px; font-size: 13px; font-weight: 500; }
-          .summary { margin-top: 15px; border-top: 2px solid #e4e4e7; padding-top: 10px; }
-          .summary-row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 13px; color: #52525b; }
-          .total-row { background: #18181b; color: white; padding: 12px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; font-weight: bold; font-size: 16px; margin-top: 10px; }
-          .courier-info { text-align: center; background: #f4f4f5; padding: 10px; border-radius: 6px; margin-top: 15px; font-size: 13px; font-weight: bold; border: 1px dashed #d4d4d8; }
-          @media print { body { width: 100%; padding: 0; } }
-        </style>
-      </head>
-      <body>
+    return `
+      <div class="invoice-page">
         <div class="header">
           <div>
             <h1>BondhuMart</h1>
@@ -272,7 +271,7 @@ export default function OrdersPage() {
           </div>
           <div style="text-align: right;">
             <div class="invoice-badge">INVOICE</div>
-            <p style="margin-top: 8px; font-family: monospace;">${selectedOrder.id.slice(-6)}</p>
+            <p style="margin-top: 8px; font-family: monospace;">${o.id.slice(-6)}</p>
           </div>
         </div>
         
@@ -284,9 +283,9 @@ export default function OrdersPage() {
           </div>
           <div class="box" style="border-left: 2px solid #10b981; padding-left: 10px;">
             <div class="box-title">Customer</div>
-            <div class="box-text">${selectedOrder.customerName}</div>
-            <div class="box-text" style="color: #0ea5e9;">📞 ${selectedOrder.phone}</div>
-            <div class="box-text" style="color: #52525b; font-size: 11px; margin-top: 4px;">${selectedOrder.address} ${selectedOrder.district ? ', ' + selectedOrder.district : ''}</div>
+            <div class="box-text">${o.customerName}</div>
+            <div class="box-text" style="color: #0ea5e9;">📞 ${o.phone}</div>
+            <div class="box-text" style="color: #52525b; font-size: 11px; margin-top: 4px;">${o.address} ${o.district ? ', ' + o.district : ''}</div>
           </div>
         </div>
 
@@ -302,8 +301,8 @@ export default function OrdersPage() {
           <tbody>
             <tr>
               <td>1</td>
-              <td>${selectedOrder.product}</td>
-              <td style="text-align: center;">${selectedOrder.quantity}</td>
+              <td>${o.product}</td>
+              <td style="text-align: center;">${o.quantity}</td>
               <td style="text-align: right;">৳ ${subtotal}</td>
             </tr>
           </tbody>
@@ -315,11 +314,28 @@ export default function OrdersPage() {
           <div class="total-row"><span>TOTAL (COD)</span><span style="color: #10b981;">৳ ${total}</span></div>
         </div>
 
-        ${selectedOrder.consignmentId ? `
+        ${o.consignmentId ? `
         <div class="courier-info">
-          Courier: ${selectedOrder.courierName?.toUpperCase()} | Courier ID: ${selectedOrder.consignmentId}
+          Courier: ${o.courierName?.toUpperCase()} | Courier ID: ${o.consignmentId}
         </div>` : ''}
+      </div>
+    `;
+  };
 
+  const handlePrintInvoice = () => {
+    if (!selectedOrder) return;
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return alert('Please allow popups to print invoices.');
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Invoice - ${selectedOrder.id}</title>
+        ${getInvoiceStyles()}
+      </head>
+      <body>
+        ${generateInvoiceHTML(selectedOrder)}
       </body>
       </html>
     `;
@@ -330,6 +346,34 @@ export default function OrdersPage() {
     setTimeout(() => {
       printWindow.print();
     }, 250);
+  }
+
+  const handleBulkPrint = () => {
+    if (selectedIds.length === 0) return;
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return alert('Please allow popups to print invoices.');
+
+    const selectedOrdersData = orders.filter(o => selectedIds.includes(o.id));
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Bulk Invoice Print (${selectedOrdersData.length})</title>
+        ${getInvoiceStyles()}
+      </head>
+      <body>
+        ${selectedOrdersData.map(o => generateInvoiceHTML(o)).join('')}
+      </body>
+      </html>
+    `;
+
+    printWindow.document.write(html);
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => {
+      printWindow.print();
+    }, 500);
   }
 
   const deleteSingleOrder = (id: string) => {
@@ -517,6 +561,11 @@ export default function OrdersPage() {
           <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search by name, phone, or product..." className="w-full bg-zinc-900 border border-zinc-800 text-white rounded-lg pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-blue-500" />
         </div>
         <div className="flex flex-wrap gap-2 w-full sm:w-auto justify-end">
+          {selectedIds.length > 0 && (
+            <button onClick={handleBulkPrint} className="flex items-center gap-2 bg-zinc-800 hover:bg-zinc-700 text-white border border-zinc-700 px-4 py-2.5 rounded-xl text-sm font-medium transition-all active:scale-95 shadow-lg">
+              <Package className="h-4 w-4" /> Bulk Print ({selectedIds.length})
+            </button>
+          )}
           {selectedIds.length > 0 && (
             <button onClick={handleDeleteSelected} className="flex items-center gap-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20 px-4 py-2.5 rounded-xl text-sm font-medium transition-all active:scale-95">
               <Trash2 className="h-4 w-4" /> Delete ({selectedIds.length})
