@@ -9,6 +9,7 @@ import {
   ShoppingCart, 
   MessageSquare, 
   Send,
+  History,
   Truck,
   BookOpen,
   Settings
@@ -20,6 +21,7 @@ const navigation = [
   { name: 'Orders', href: '/orders', icon: ShoppingCart },
   { name: 'Live AI Chat', href: '/chat', icon: MessageSquare },
   { name: 'AI Broadcast', href: '/broadcast', icon: Send },
+  { name: 'Broadcast Logs', href: '/broadcast-logs', icon: History },
   { name: 'AI Training Center', href: '/ai-training', icon: BookOpen },
   { name: 'Courier Auto-Entry', href: '/courier', icon: Truck },
   { name: 'Knowledge Base', href: '/knowledge', icon: BookOpen },

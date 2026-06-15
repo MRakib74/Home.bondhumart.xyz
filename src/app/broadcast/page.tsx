@@ -23,6 +23,7 @@ export default function BroadcastPage() {
   const [fMinPrice, setFMinPrice] = useState('')
   const [fMaxPrice, setFMaxPrice] = useState('')
   const [fMinOrders, setFMinOrders] = useState('')
+  const [fExcludeDays, setFExcludeDays] = useState('0') // 0 = None
 
   // Recalculate stats helper
   const updateAudienceStats = (filtered: any[]) => {
@@ -127,6 +128,29 @@ export default function BroadcastPage() {
     if (fMinOrders) {
       filtered = filtered.filter(c => (c.totalOrders || 0) >= Number(fMinOrders))
     }
+
+    // Smart Exclusion
+    if (fExcludeDays !== '0') {
+      try {
+        const logsData = localStorage.getItem('bondhu_broadcast_logs')
+        if (logsData) {
+          const logs = JSON.parse(logsData)
+          const excludeTime = new Date()
+          excludeTime.setDate(excludeTime.getDate() - Number(fExcludeDays))
+          
+          const excludedIds = new Set<number>()
+          logs.forEach((log: any) => {
+            if (new Date(log.date) >= excludeTime && log.customerIds) {
+              log.customerIds.forEach((id: number) => excludedIds.add(id))
+            }
+          })
+          
+          filtered = filtered.filter(c => !excludedIds.has(c.id))
+        }
+      } catch (e) {
+        console.error("Exclusion error", e)
+      }
+    }
     
     updateAudienceStats(filtered)
     setIsFilterModalOpen(false)
@@ -195,8 +219,28 @@ export default function BroadcastPage() {
   }
 
   const handleSend = () => {
+    if (audience.length === 0) return alert("No audience selected!");
     setIsSending(true)
+    
+    // Save to Logs
     setTimeout(() => {
+      try {
+        const logsData = localStorage.getItem('bondhu_broadcast_logs')
+        const logs = logsData ? JSON.parse(logsData) : []
+        const newLog = {
+          id: 'log-' + Date.now(),
+          date: new Date().toISOString(),
+          medium: activeTab,
+          product: fProduct || "General Broadcast",
+          audienceSize: activeTab === 'whatsapp' ? whatsappCount : activeTab === 'gmail' ? emailCount : audience.length,
+          status: 'Success',
+          customerIds: audience.map(c => c.id)
+        }
+        localStorage.setItem('bondhu_broadcast_logs', JSON.stringify([newLog, ...logs]))
+      } catch (e) {
+        console.error(e)
+      }
+
       alert(`✅ ব্রডকাস্ট সফলভাবে শুরু হয়েছে!`)
       setIsSending(false)
     }, 2000)
@@ -313,6 +357,23 @@ export default function BroadcastPage() {
               <div>
                 <label className="block text-sm font-medium text-zinc-300 mb-2">Minimum Orders (Loyal Customers)</label>
                 <input type="number" value={fMinOrders} onChange={e=>setFMinOrders(e.target.value)} placeholder="e.g. 2, 3..." className="w-full bg-[#1a1a1a] border border-zinc-800 text-white rounded-lg px-4 py-2.5 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 text-sm" />
+              </div>
+
+              {/* Smart Exclusion */}
+              <div className="pt-2 border-t border-zinc-800/50">
+                <label className="block text-sm font-medium text-rose-400 mb-2 flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4" /> Smart Exclusion (Prevent Spam)
+                </label>
+                <div className="relative">
+                  <select value={fExcludeDays} onChange={e=>setFExcludeDays(e.target.value)} className="w-full bg-[#1a1a1a] border border-rose-500/50 text-white rounded-lg px-4 py-2.5 appearance-none focus:outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500 cursor-pointer text-sm shadow-[0_0_10px_rgba(244,63,94,0.05)]">
+                    <option value="0">None (Don't Exclude Anyone)</option>
+                    <option value="3">Exclude customers messaged in Last 3 Days</option>
+                    <option value="5">Exclude customers messaged in Last 5 Days</option>
+                    <option value="7">Exclude customers messaged in Last 7 Days</option>
+                    <option value="30">Exclude customers messaged in Last 30 Days</option>
+                  </select>
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-rose-500 pointer-events-none" />
+                </div>
               </div>
             </div>
 
