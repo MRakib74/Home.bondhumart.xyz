@@ -19,6 +19,7 @@ const navigation = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
   { name: 'Customers & CRM', href: '/customers', icon: Users },
   { name: 'Orders', href: '/orders', icon: ShoppingCart },
+  { name: 'Fraud Check & History', href: '/history', icon: History },
   { name: 'Live AI Chat', href: '/chat', icon: MessageSquare },
   { name: 'AI Broadcast', href: '/broadcast', icon: Send },
   { name: 'Broadcast Logs', href: '/broadcast-logs', icon: History },

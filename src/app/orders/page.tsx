@@ -38,7 +38,7 @@ export default function OrdersPage() {
   const [orders, setOrders] = useState<OrderItem[]>([])
   const [search, setSearch] = useState('')
   const [selectedIds, setSelectedIds] = useState<string[]>([])
-  
+
   // Modals
   const [showAddModal, setShowAddModal] = useState(false)
   const [showCourierModal, setShowCourierModal] = useState(false)
@@ -108,15 +108,15 @@ export default function OrdersPage() {
     if (!nName || !nPhone || !nProduct || !nAmount) return alert('সব ফিল্ড পূরণ করুন!')
     const newOrder: OrderItem = {
       id: 'ORD-' + Date.now(),
-      customerName: nName, 
-      phone: formatPhoneForCourier(nPhone), 
-      address: nAddress, 
+      customerName: nName,
+      phone: formatPhoneForCourier(nPhone),
+      address: nAddress,
       district: nDistrict,
-      product: nProduct, 
-      quantity: Number(nQty), 
+      product: nProduct,
+      quantity: Number(nQty),
       amount: Number(nAmount),
-      deliveryCharge: Number(nDelivery), 
-      status: 'new', 
+      deliveryCharge: Number(nDelivery),
+      status: 'new',
       source: 'Manual',
       createdAt: new Date().toISOString()
     }
@@ -130,7 +130,7 @@ export default function OrdersPage() {
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0]
       setSelectedFile(file)
-      
+
       const reader = new FileReader()
       reader.onload = (ev) => {
         try {
@@ -139,12 +139,12 @@ export default function OrdersPage() {
           const sheetName = workbook.SheetNames[0]
           const sheet = workbook.Sheets[sheetName]
           const json = XLSX.utils.sheet_to_json(sheet)
-          
+
           if (json.length > 0) {
             setParsedData(json)
             const headers = Object.keys(json[0] as object)
             setFileHeaders(headers)
-            
+
             // Auto-select columns based on common names
             const autoMap: any = { name: "", phone: "", address: "", district: "", product: "", quantity: "", amount: "", delivery: "" }
             headers.forEach(h => {
@@ -191,7 +191,7 @@ export default function OrdersPage() {
       saveOrders([...newOrders, ...orders])
       alert(`✅ ${newOrders.length} টি অর্ডার সফলভাবে "Confirmed Orders"-এ ইম্পোর্ট হয়েছে!`)
     }
-    
+
     setIsUploadModalOpen(false)
     setUploadStep(1)
     setSelectedFile(null)
@@ -481,7 +481,7 @@ export default function OrdersPage() {
           saveOrders(updated)
           setSelectedIds([])
           setShowCourierModal(false)
-          
+
           let msg = `✅ ${data.processed} টি অর্ডার Pathao কুরিয়ারে সফলভাবে এন্ট্রি হয়েছে!`
           if (data.failed > 0) {
             msg += `\n❌ ${data.failed} টি অর্ডার ফেইল করেছে।`
@@ -572,7 +572,7 @@ export default function OrdersPage() {
         saveOrders(updated)
         setSelectedIds([])
         setShowCourierModal(false)
-        
+
         let msg = `✅ ${data.processed} টি অর্ডার Steadfast কুরিয়ারে সফলভাবে এন্ট্রি হয়েছে!`
         if (data.failed > 0) {
           const firstError = data.errors[0]?.error || 'Unknown Error';
@@ -750,14 +750,14 @@ export default function OrdersPage() {
                 <X className="h-5 w-5" />
               </button>
             </div>
-            
+
             <div className="p-6 overflow-y-auto custom-scrollbar flex-1">
               {uploadStep === 1 && (
                 <div className="space-y-6">
                   <div className="bg-emerald-500/10 border border-emerald-500/20 p-4 rounded-xl text-emerald-400 text-sm">
                     <strong>Step 1:</strong> Upload your CSV or Excel (.xlsx) file containing confirmed website orders. You can map columns in the next step.
                   </div>
-                  
+
                   <label className="flex flex-col items-center justify-center border-2 border-dashed border-zinc-700 hover:border-emerald-500 rounded-2xl p-12 cursor-pointer transition-colors bg-zinc-900/50 group">
                     <Upload className="h-10 w-10 text-zinc-500 group-hover:text-emerald-500 mb-4 transition-colors" />
                     <span className="text-zinc-300 font-medium text-lg">Click to Upload File</span>
@@ -803,8 +803,8 @@ export default function OrdersPage() {
                           <tr key={field.key} className="hover:bg-zinc-800/30">
                             <td className="px-4 py-3 font-medium text-zinc-300">{field.label}</td>
                             <td className="px-4 py-3">
-                              <select 
-                                value={colMap[field.key as keyof typeof colMap]} 
+                              <select
+                                value={colMap[field.key as keyof typeof colMap]}
                                 onChange={e => setColMap(prev => ({ ...prev, [field.key]: e.target.value }))}
                                 className="w-full bg-zinc-950 border border-zinc-700 text-white rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500"
                               >
@@ -902,7 +902,7 @@ export default function OrdersPage() {
                   {selectedOrder.status.toUpperCase()}
                 </span>
               </div>
-              
+
               <div className="grid grid-cols-2 gap-4">
                 <div><label className="block text-xs text-zinc-400 mb-1">Customer Name *</label><input value={eName} onChange={e => setEName(e.target.value)} className="w-full bg-zinc-900 border border-zinc-800 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500" /></div>
                 <div><label className="block text-xs text-zinc-400 mb-1">Phone *</label><input value={ePhone} onChange={e => setEPhone(e.target.value)} className="w-full bg-zinc-900 border border-zinc-800 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500" /></div>
