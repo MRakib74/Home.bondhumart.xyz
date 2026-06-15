@@ -52,6 +52,7 @@ export default function OrdersPage() {
   const [nQty, setNQty] = useState('1')
   const [nAmount, setNAmount] = useState('')
   const [nDelivery, setNDelivery] = useState('80')
+  const [isSending, setIsSending] = useState(false)
 
   // Excel Import State
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
@@ -182,26 +183,93 @@ export default function OrdersPage() {
     setShowCourierModal(true)
   }
 
-  const confirmCourierEntry = () => {
-    const updated = orders.map(o => {
-      if (selectedIds.includes(o.id)) {
-        return {
-          ...o,
-          status: 'shipped' as const,
-          courierName: selectedCourier,
-          // Generate a fake tracking number for demo purposes
-          trackingNo: 'TRK-' + Math.random().toString(36).substr(2, 8).toUpperCase(),
-          shippedAt: new Date().toISOString(),
-          // Re-ensure phone is formatted
-          phone: formatPhoneForCourier(o.phone)
+  const confirmCourierEntry = async () => {
+    if (selectedCourier !== 'steadfast') {
+      // Mock for others currently
+      const updated = orders.map(o => {
+        if (selectedIds.includes(o.id)) {
+          return {
+            ...o,
+            status: 'shipped' as const,
+            courierName: selectedCourier,
+            trackingNo: 'TRK-' + Math.random().toString(36).substr(2, 8).toUpperCase(),
+            shippedAt: new Date().toISOString(),
+            phone: formatPhoneForCourier(o.phone)
+          }
         }
+        return o
+      })
+      saveOrders(updated)
+      setSelectedIds([])
+      setShowCourierModal(false)
+      alert(`✅ ${selectedIds.length} টি অর্ডার ${selectedCourier} কুরিয়ারে সফলভাবে এন্ট্রি হয়েছে (Mocked)!`)
+      return;
+    }
+
+    // Steadfast API Integration
+    try {
+      const courierConfigRaw = localStorage.getItem('bondhu_courier_config')
+      let steadfastConfig = null;
+      if (courierConfigRaw) {
+        const config = JSON.parse(courierConfigRaw)
+        steadfastConfig = config.couriers?.find((c: any) => c.id === 'steadfast')
       }
-      return o
-    })
-    saveOrders(updated)
-    setSelectedIds([])
-    setShowCourierModal(false)
-    alert(`✅ ${selectedIds.length} টি অর্ডার ${selectedCourier} কুরিয়ারে সফলভাবে এন্ট্রি হয়েছে এবং Shipped Orders এ চলে গেছে!`)
+
+      if (!steadfastConfig || !steadfastConfig.isActive || !steadfastConfig.apiKey || !steadfastConfig.secretKey) {
+        return alert('Steadfast API Key / Secret Key সেট করা নেই! Courier Auto-Entry পেজ থেকে সেটআপ করুন।')
+      }
+
+      setIsSending(true)
+
+      const ordersToSend = orders.filter(o => selectedIds.includes(o.id))
+
+      const res = await fetch('/api/courier/steadfast', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          apiKey: steadfastConfig.apiKey,
+          secretKey: steadfastConfig.secretKey,
+          orders: ordersToSend
+        })
+      })
+
+      const data = await res.json()
+
+      if (data.success) {
+        const updated = orders.map(o => {
+          if (selectedIds.includes(o.id)) {
+            // Find tracking number from API results
+            const apiResult = data.results.find((r: any) => r.orderId === o.id)
+            return {
+              ...o,
+              status: 'shipped' as const,
+              courierName: selectedCourier,
+              trackingNo: apiResult?.tracking_code || 'STDF-' + Date.now(),
+              shippedAt: new Date().toISOString(),
+              phone: formatPhoneForCourier(o.phone)
+            }
+          }
+          return o
+        })
+        saveOrders(updated)
+        setSelectedIds([])
+        setShowCourierModal(false)
+        
+        let msg = `✅ ${data.processed} টি অর্ডার Steadfast কুরিয়ারে সফলভাবে এন্ট্রি হয়েছে!`
+        if (data.failed > 0) {
+          msg += `\n❌ ${data.failed} টি অর্ডার ফেইল করেছে। (সম্ভবত ভুল ফোন নাম্বার বা এরর)`
+          console.error(data.errors)
+        }
+        alert(msg)
+      } else {
+        alert(`❌ Error: ${data.error}`)
+      }
+    } catch (err) {
+      alert('Internal error occurred while communicating with courier API.')
+      console.error(err)
+    } finally {
+      setIsSending(false)
+    }
   }
 
   const newCount = orders.filter(o => o.status === 'new').length
@@ -445,8 +513,10 @@ export default function OrdersPage() {
               ))}
             </div>
             <div className="p-5 border-t border-zinc-800 flex gap-3 justify-end">
-              <button onClick={() => setShowCourierModal(false)} className="px-4 py-2 text-sm text-zinc-400 hover:text-white">Cancel</button>
-              <button onClick={confirmCourierEntry} className="bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-2.5 rounded-xl text-sm font-medium flex items-center gap-2 shadow-lg shadow-emerald-500/20"><Truck className="h-4 w-4" /> Confirm & Auto-Ship</button>
+              <button onClick={() => setShowCourierModal(false)} className="px-4 py-2 text-sm text-zinc-400 hover:text-white" disabled={isSending}>Cancel</button>
+              <button onClick={confirmCourierEntry} disabled={isSending} className="bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-2.5 rounded-xl text-sm font-medium flex items-center gap-2 shadow-lg shadow-emerald-500/20 disabled:opacity-50">
+                <Truck className="h-4 w-4" /> {isSending ? 'Sending to Steadfast...' : 'Confirm & Auto-Ship'}
+              </button>
             </div>
           </div>
         </div>
