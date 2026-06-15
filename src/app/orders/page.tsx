@@ -243,21 +243,22 @@ export default function OrdersPage() {
       .header p { margin: 2px 0 0; font-size: 9px; opacity: 0.9; }
       .invoice-badge { background: rgba(255,255,255,0.2); padding: 2px 6px; border-radius: 10px; font-weight: bold; font-size: 9px; }
       
-      .details-box { display: flex; justify-content: space-between; border-bottom: 1px solid #e4e4e7; padding: 8px 12px; background: #fafafa; }
+      .details-box { display: flex; justify-content: space-between; border-bottom: 1px solid #e4e4e7; padding: 6px 10px; background: #fafafa; }
       .box { width: 48%; }
       .box-title { font-size: 9px; color: #71717a; text-transform: uppercase; font-weight: bold; margin-bottom: 2px; }
       .box-text { font-size: 10px; margin: 1px 0; font-weight: 600; }
+      .address-text { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: 9.5px; margin-top: 2px; color: #52525b; line-height: 1.25; }
       
-      .table-container { padding: 0 12px; flex-grow: 1; }
-      .table { width: 100%; border-collapse: collapse; margin-top: 5px; }
+      .table-container { padding: 0 10px; flex-grow: 1; overflow: hidden; min-height: 0; }
+      .table { width: 100%; border-collapse: collapse; margin-top: 4px; }
       .table th { border-bottom: 1px solid #e4e4e7; padding: 4px 2px; text-align: left; font-size: 9px; color: #71717a; text-transform: uppercase; }
       .table td { border-bottom: 1px dashed #e4e4e7; padding: 4px 2px; font-size: 10px; font-weight: 600; }
       
-      .summary { margin-top: auto; padding: 8px 12px; border-top: 1px solid #e4e4e7; }
+      .summary { margin-top: auto; padding: 6px 10px; border-top: 1px solid #e4e4e7; flex-shrink: 0; }
       .summary-row { display: flex; justify-content: space-between; padding: 2px 0; font-size: 10px; color: #52525b; }
       .total-row { background: #18181b; color: white; padding: 6px 8px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; font-weight: bold; font-size: 12px; margin-top: 4px; }
       
-      .courier-info { text-align: center; background: #f4f4f5; padding: 6px; margin: 8px 12px 12px; border-radius: 4px; font-size: 10px; font-weight: bold; border: 1px dashed #d4d4d8; }
+      .courier-info { text-align: center; background: #f4f4f5; padding: 6px; margin: 6px 10px 10px; border-radius: 4px; font-size: 10px; font-weight: bold; border: 1px dashed #d4d4d8; flex-shrink: 0; }
       
       @media screen {
         body { background: #52525b; padding: 20mm 0; }
@@ -294,7 +295,7 @@ export default function OrdersPage() {
             <div class="box-title">Customer</div>
             <div class="box-text">${o.customerName}</div>
             <div class="box-text" style="color: #0ea5e9;">📞 ${o.phone}</div>
-            <div class="box-text" style="color: #52525b; font-size: 11px; margin-top: 4px;">${o.address} ${o.district ? ', ' + o.district : ''}</div>
+            <div class="address-text">${o.address} ${o.district ? ', ' + o.district : ''}</div>
           </div>
         </div>
 
