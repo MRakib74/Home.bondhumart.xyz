@@ -20,6 +20,7 @@ const navigation = [
   { name: 'Orders', href: '/orders', icon: ShoppingCart },
   { name: 'Live AI Chat', href: '/chat', icon: MessageSquare },
   { name: 'AI Broadcast', href: '/broadcast', icon: Send },
+  { name: 'AI Training Center', href: '/ai-training', icon: BookOpen },
   { name: 'Courier Auto-Entry', href: '/courier', icon: Truck },
   { name: 'Knowledge Base', href: '/knowledge', icon: BookOpen },
   { name: 'Settings', href: '/settings', icon: Settings },

@@ -1,7 +1,8 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { Search, Download, Upload, Filter, X, FileSpreadsheet, CheckCircle2, Edit2, Save, MessageCircle, User, MapPin, Package, ShoppingBag, Calendar, ArrowRight, Trash2 } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { Search, Download, Upload, Filter, X, FileSpreadsheet, CheckCircle2, Edit2, Save, MessageCircle, User, MapPin, Package, ShoppingBag, Calendar, ArrowRight, Trash2, Send } from "lucide-react"
 import * as XLSX from "xlsx"
 
 // Default mock data
@@ -85,6 +86,8 @@ const COLUMN_DEF = {
 }
 
 export default function CustomersPage() {
+  const router = useRouter()
+  const [isClient, setIsClient] = useState(false)
   const [activeTab, setActiveTab] = useState('All')
   const [customers, setCustomers] = useState(defaultCustomers)
   const [searchQuery, setSearchQuery] = useState('')
@@ -257,6 +260,23 @@ export default function CustomersPage() {
     XLSX.writeFile(wb, `Bondhu_Customers_${activeTab.replace(/[^a-zA-Z]/g, '')}.xlsx`)
   }
 
+  const handleSendToBroadcast = () => {
+    const targetCustomers = selectedIds.length > 0 
+      ? customers.filter(c => selectedIds.includes(c.id)) 
+      : filteredCustomers;
+      
+    if (targetCustomers.length === 0) {
+      alert("কোনো কাস্টমার পাওয়া যায়নি!");
+      return;
+    }
+    
+    // Store in localStorage to pass to the Broadcast page
+    localStorage.setItem('broadcast_audience', JSON.stringify(targetCustomers));
+    
+    // Navigate to broadcast page
+    router.push('/broadcast');
+  }
+
   // --- Drag to Scroll Handlers ---
   const handleScrollMouseDown = (e: React.MouseEvent) => {
     if (!scrollRef.current) return
@@ -350,14 +370,21 @@ export default function CustomersPage() {
             className="flex items-center gap-2 bg-zinc-800 text-white px-3 py-2 rounded-lg font-medium hover:bg-zinc-700 transition-colors border border-zinc-700 text-sm"
           >
             <Upload className="h-4 w-4" />
-            Import Data
+            <span className="hidden sm:inline">Import Data</span>
           </button>
           <button 
             onClick={handleExport}
-            className="flex items-center gap-2 bg-blue-600 text-white px-3 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors text-sm"
+            className="flex items-center gap-2 bg-blue-600/10 text-blue-500 border border-blue-500/20 px-3 py-2 rounded-lg font-medium hover:bg-blue-600/20 transition-colors text-sm"
           >
             <Download className="h-4 w-4" />
-            Export Data
+            <span className="hidden sm:inline">Export Data</span>
+          </button>
+          <button 
+            onClick={handleSendToBroadcast}
+            className="flex items-center gap-2 bg-indigo-600 text-white px-3 py-2 rounded-lg font-medium hover:bg-indigo-700 shadow-lg shadow-indigo-900/20 transition-colors text-sm"
+          >
+            <Send className="h-4 w-4" />
+            Send to Broadcast
           </button>
         </div>
       </div>
@@ -395,18 +422,18 @@ export default function CustomersPage() {
                 
                 {isFilterOpen && (
                   <>
-                    <div className="fixed inset-0 z-10" onClick={() => setIsFilterOpen(false)} />
-                    <div className="absolute right-0 mt-2 w-56 bg-zinc-950 border border-zinc-800 rounded-xl shadow-2xl z-20 p-2">
-                      <div className="text-xs font-semibold text-zinc-500 uppercase px-3 py-2 mb-1">Visible Columns</div>
+                    <div className="fixed inset-0 z-40" onClick={() => setIsFilterOpen(false)} />
+                    <div className="absolute right-0 mt-2 w-56 bg-zinc-900 border border-zinc-700 rounded-xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.8)] z-50 p-2 text-white">
+                      <div className="text-xs font-semibold text-zinc-400 uppercase px-3 py-2 mb-1">Visible Columns</div>
                       {Object.keys(visibleCols).map(col => (
-                        <label key={col} className="flex items-center gap-3 px-3 py-2 hover:bg-zinc-900 rounded-lg cursor-pointer transition-colors">
+                        <label key={col} className="flex items-center gap-3 px-3 py-2 hover:bg-zinc-800 rounded-lg cursor-pointer transition-colors">
                           <input 
                             type="checkbox" 
                             checked={visibleCols[col as keyof typeof visibleCols]}
                             onChange={(e) => setVisibleCols({...visibleCols, [col]: e.target.checked})}
-                            className="rounded bg-zinc-900 border-zinc-700 text-blue-500 focus:ring-blue-500 focus:ring-offset-zinc-950 h-4 w-4"
+                            className="rounded bg-zinc-950 border-zinc-600 text-blue-500 focus:ring-blue-500 focus:ring-offset-zinc-900 h-4 w-4"
                           />
-                          <span className="text-sm text-zinc-300 capitalize">{col.replace(/([A-Z])/g, ' $1').trim()}</span>
+                          <span className="text-sm font-medium capitalize">{col.replace(/([A-Z])/g, ' $1').trim()}</span>
                         </label>
                       ))}
                     </div>
