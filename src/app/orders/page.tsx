@@ -141,7 +141,23 @@ export default function OrdersPage() {
           
           if (json.length > 0) {
             setParsedData(json)
-            setFileHeaders(Object.keys(json[0] as object))
+            const headers = Object.keys(json[0] as object)
+            setFileHeaders(headers)
+            
+            // Auto-select columns based on common names
+            const autoMap: any = { name: "", phone: "", address: "", district: "", product: "", quantity: "", amount: "", delivery: "" }
+            headers.forEach(h => {
+              const lower = h.toLowerCase()
+              if (!autoMap.name && (lower.includes('name') || lower.includes('customer'))) autoMap.name = h
+              else if (!autoMap.phone && (lower.includes('phone') || lower.includes('mobile') || lower.includes('contact'))) autoMap.phone = h
+              else if (!autoMap.address && (lower.includes('address') || lower.includes('location'))) autoMap.address = h
+              else if (!autoMap.district && (lower.includes('district') || lower.includes('city'))) autoMap.district = h
+              else if (!autoMap.product && (lower.includes('product') || lower.includes('item'))) autoMap.product = h
+              else if (!autoMap.quantity && (lower.includes('qty') || lower.includes('quantity'))) autoMap.quantity = h
+              else if (!autoMap.amount && (lower.includes('amount') || lower.includes('price') || lower.includes('total') || lower.includes('subtotal'))) autoMap.amount = h
+              else if (!autoMap.delivery && (lower.includes('delivery') || lower.includes('charge') || lower.includes('shipping'))) autoMap.delivery = h
+            })
+            setColMap(autoMap)
           }
         } catch (error) {
           alert("File parsing failed. Please upload a valid CSV or XLSX file.")
