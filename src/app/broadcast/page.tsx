@@ -15,6 +15,8 @@ export default function BroadcastPage() {
   // Filter Modal State
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false)
   const [fDate, setFDate] = useState('All')
+  const [fCustomStart, setFCustomStart] = useState('')
+  const [fCustomEnd, setFCustomEnd] = useState('')
   const [fStatus, setFStatus] = useState('All')
   const [fLocation, setFLocation] = useState('Everywhere')
   const [fProduct, setFProduct] = useState('')
@@ -55,6 +57,46 @@ export default function BroadcastPage() {
   const applyFilters = () => {
     let filtered = [...allCustomers]
 
+    // Date Range
+    if (fDate !== 'All') {
+      const now = new Date()
+      filtered = filtered.filter(c => {
+        if (!c.date || c.date === "-") return false;
+        const cDate = new Date(c.date)
+        if (isNaN(cDate.getTime())) return false; // Invalid date
+
+        if (fDate === 'Today') {
+          return cDate.toDateString() === now.toDateString()
+        } else if (fDate === 'Last 7 Days') {
+          const sevenDaysAgo = new Date()
+          sevenDaysAgo.setDate(now.getDate() - 7)
+          return cDate >= sevenDaysAgo && cDate <= now
+        } else if (fDate === 'Last 30 Days') {
+          const thirtyDaysAgo = new Date()
+          thirtyDaysAgo.setDate(now.getDate() - 30)
+          return cDate >= thirtyDaysAgo && cDate <= now
+        } else if (fDate === 'Custom') {
+          if (!fCustomStart && !fCustomEnd) return true;
+          
+          let isValid = true;
+          if (fCustomStart) {
+            const start = new Date(fCustomStart)
+            // set time to start of day
+            start.setHours(0,0,0,0)
+            if (cDate < start) isValid = false;
+          }
+          if (fCustomEnd) {
+            const end = new Date(fCustomEnd)
+            // set time to end of day
+            end.setHours(23,59,59,999)
+            if (cDate > end) isValid = false;
+          }
+          return isValid;
+        }
+        return true;
+      })
+    }
+
     // Order Status
     if (fStatus !== 'All') {
       filtered = filtered.filter(c => c.status === fStatus)
@@ -85,8 +127,6 @@ export default function BroadcastPage() {
     if (fLoyal) {
       filtered = filtered.filter(c => (c.totalOrders || 0) > 1)
     }
-
-    // Note: Date Range omitted for simplicity in mock data, but easily added with Date parsing.
     
     updateAudienceStats(filtered)
     setIsFilterModalOpen(false)
@@ -170,9 +210,23 @@ export default function BroadcastPage() {
                     <option value="Today">Today</option>
                     <option value="Last 7 Days">Last 7 Days</option>
                     <option value="Last 30 Days">Last 30 Days</option>
+                    <option value="Custom">Custom Date Range</option>
                   </select>
                   <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500 pointer-events-none" />
                 </div>
+                
+                {fDate === 'Custom' && (
+                  <div className="grid grid-cols-2 gap-4 mt-3">
+                    <div>
+                      <label className="block text-xs text-zinc-400 mb-1">From Date</label>
+                      <input type="date" value={fCustomStart} onChange={e=>setFCustomStart(e.target.value)} className="w-full bg-[#1a1a1a] border border-zinc-800 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-orange-500" />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-zinc-400 mb-1">To Date</label>
+                      <input type="date" value={fCustomEnd} onChange={e=>setFCustomEnd(e.target.value)} className="w-full bg-[#1a1a1a] border border-zinc-800 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-orange-500" />
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Order Status */}
