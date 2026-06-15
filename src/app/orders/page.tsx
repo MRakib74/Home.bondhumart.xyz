@@ -290,8 +290,8 @@ export default function OrdersPage() {
         steadfastConfig = config.couriers?.find((c: any) => c.id === 'steadfast')
       }
 
-      if (!steadfastConfig || !steadfastConfig.isActive || !steadfastConfig.apiKey || !steadfastConfig.secretKey || !steadfastConfig.baseUrl) {
-        return alert('Steadfast API Key / Secret Key অথবা Base URL সেট করা নেই! Courier Auto-Entry পেজ থেকে সেটআপ করুন।')
+      if (!steadfastConfig || !steadfastConfig.isActive || !steadfastConfig.apiKey || !steadfastConfig.secretKey) {
+        return alert('Steadfast API Key / Secret Key সেট করা নেই! Courier Auto-Entry পেজ থেকে সেটআপ করুন।')
       }
 
       setIsSending(true)
@@ -304,7 +304,6 @@ export default function OrdersPage() {
         body: JSON.stringify({
           apiKey: steadfastConfig.apiKey,
           secretKey: steadfastConfig.secretKey,
-          baseUrl: steadfastConfig.baseUrl,
           orders: ordersToSend
         })
       })
@@ -386,24 +385,24 @@ export default function OrdersPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex overflow-x-auto custom-scrollbar items-center gap-2 bg-zinc-900/50 p-1.5 rounded-xl border border-zinc-800">
-        <button onClick={() => { setActiveTab('new'); setSelectedIds([]) }} className={`flex-1 min-w-[140px] flex items-center justify-center gap-2 py-3 rounded-lg text-sm font-medium transition-all ${activeTab === 'new' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' : 'text-zinc-500 hover:text-zinc-300'}`}>
-          <Package className="h-4 w-4" /> New Orders <span className="bg-amber-500/20 text-amber-400 text-xs px-2 py-0.5 rounded-full">{newCount}</span>
+      <div className="flex flex-wrap md:flex-nowrap items-center gap-2 bg-zinc-900/50 p-1.5 rounded-xl border border-zinc-800">
+        <button onClick={() => { setActiveTab('new'); setSelectedIds([]) }} className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg text-sm font-medium transition-all ${activeTab === 'new' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' : 'text-zinc-500 hover:text-zinc-300'}`}>
+          <Package className="h-4 w-4" /> New <span className="bg-amber-500/20 text-amber-400 text-xs px-2 py-0.5 rounded-full">{newCount}</span>
         </button>
-        <button onClick={() => { setActiveTab('confirmed'); setSelectedIds([]) }} className={`flex-1 min-w-[140px] flex items-center justify-center gap-2 py-3 rounded-lg text-sm font-medium transition-all ${activeTab === 'confirmed' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' : 'text-zinc-500 hover:text-zinc-300'}`}>
+        <button onClick={() => { setActiveTab('confirmed'); setSelectedIds([]) }} className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg text-sm font-medium transition-all ${activeTab === 'confirmed' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' : 'text-zinc-500 hover:text-zinc-300'}`}>
           <CheckCircle2 className="h-4 w-4" /> Confirmed <span className="bg-blue-500/20 text-blue-400 text-xs px-2 py-0.5 rounded-full">{confirmedCount}</span>
         </button>
-        <button onClick={() => { setActiveTab('shipped'); setSelectedIds([]) }} className={`flex-1 min-w-[120px] flex items-center justify-center gap-2 py-3 rounded-lg text-sm font-medium transition-all ${activeTab === 'shipped' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'text-zinc-500 hover:text-zinc-300'}`}>
-          <Truck className="h-4 w-4" /> Shipped <span className="bg-emerald-500/20 text-emerald-400 text-xs px-2 py-0.5 rounded-full">{shippedCount}</span>
+        <button onClick={() => { setActiveTab('shipped'); setSelectedIds([]) }} className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg text-sm font-medium transition-all ${activeTab === 'shipped' ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30' : 'text-zinc-500 hover:text-zinc-300'}`}>
+          <Truck className="h-4 w-4" /> Shipped <span className="bg-indigo-500/20 text-indigo-400 text-xs px-2 py-0.5 rounded-full">{shippedCount}</span>
         </button>
-        <button onClick={() => { setActiveTab('delivered'); setSelectedIds([]) }} className={`flex-1 min-w-[130px] flex items-center justify-center gap-2 py-3 rounded-lg text-sm font-medium transition-all ${activeTab === 'delivered' ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30' : 'text-zinc-500 hover:text-zinc-300'}`}>
-          <CheckCircle2 className="h-4 w-4" /> Delivered <span className="bg-purple-500/20 text-purple-400 text-xs px-2 py-0.5 rounded-full">{deliveredCount}</span>
+        <button onClick={() => { setActiveTab('delivered'); setSelectedIds([]) }} className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg text-sm font-medium transition-all ${activeTab === 'delivered' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'text-zinc-500 hover:text-zinc-300'}`}>
+          <Package className="h-4 w-4" /> Delivered <span className="bg-emerald-500/20 text-emerald-400 text-xs px-2 py-0.5 rounded-full">{deliveredCount}</span>
         </button>
-        <button onClick={() => { setActiveTab('returned'); setSelectedIds([]) }} className={`flex-1 min-w-[120px] flex items-center justify-center gap-2 py-3 rounded-lg text-sm font-medium transition-all ${activeTab === 'returned' ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30' : 'text-zinc-500 hover:text-zinc-300'}`}>
+        <button onClick={() => { setActiveTab('returned'); setSelectedIds([]) }} className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg text-sm font-medium transition-all ${activeTab === 'returned' ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30' : 'text-zinc-500 hover:text-zinc-300'}`}>
           <X className="h-4 w-4" /> Returned <span className="bg-rose-500/20 text-rose-400 text-xs px-2 py-0.5 rounded-full">{returnedCount}</span>
         </button>
-        <button onClick={() => { setActiveTab('returned_received'); setSelectedIds([]) }} className={`flex-1 min-w-[160px] flex items-center justify-center gap-2 py-3 rounded-lg text-sm font-medium transition-all ${activeTab === 'returned_received' ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30' : 'text-zinc-500 hover:text-zinc-300'}`}>
-          <Package className="h-4 w-4" /> Ret. Received <span className="bg-orange-500/20 text-orange-400 text-xs px-2 py-0.5 rounded-full">{returnedReceivedCount}</span>
+        <button onClick={() => { setActiveTab('returned_received'); setSelectedIds([]) }} className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg text-sm font-medium transition-all ${activeTab === 'returned_received' ? 'bg-fuchsia-500/20 text-fuchsia-400 border border-fuchsia-500/30' : 'text-zinc-500 hover:text-zinc-300'}`}>
+          <Package className="h-4 w-4" /> Ret. Received <span className="bg-fuchsia-500/20 text-fuchsia-400 text-xs px-2 py-0.5 rounded-full">{returnedReceivedCount}</span>
         </button>
       </div>
 
@@ -673,7 +672,7 @@ export default function OrdersPage() {
                 <div><label className="block text-xs text-zinc-400 mb-1">Delivery (৳)</label><input type="number" value={eDelivery} onChange={e => setEDelivery(e.target.value)} className="w-full bg-zinc-900 border border-zinc-800 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500" /></div>
               </div>
 
-              {['shipped', 'delivered', 'returned', 'returned_received'].includes(selectedOrder.status) && (
+              {selectedOrder.status === 'shipped' && (
                 <div className="bg-emerald-500/5 border border-emerald-500/20 p-3 rounded-lg mt-4">
                   <p className="text-xs text-emerald-400 font-medium mb-1">Courier Details</p>
                   <p className="text-sm text-zinc-300 capitalize">Courier: {selectedOrder.courierName}</p>
