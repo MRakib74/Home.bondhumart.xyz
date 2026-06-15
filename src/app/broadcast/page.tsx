@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { Send, Users, Mail, MessageSquare, Phone, Image as ImageIcon, Link as LinkIcon, Video, Settings, Play, CheckCircle2, AlertTriangle, Sparkles, Filter, ChevronDown, X, Download, LayoutTemplate, Type, Layers } from "lucide-react"
-import imglyRemoveBackground from "@imgly/background-removal"
+import { removeBackground } from "@imgly/background-removal"
 
 export default function BroadcastPage() {
   const [audience, setAudience] = useState<any[]>([])
@@ -297,8 +297,8 @@ export default function BroadcastPage() {
       setAiProductImg(file)
       setIsRemovingBg(true)
       try {
-        // @ts-ignore - imgly exports correctly but TS types might be mismatched
-        const imageBlob = await imglyRemoveBackground(file)
+        // @ts-ignore
+        const imageBlob = await removeBackground(file)
         setProcessedProductImg(URL.createObjectURL(imageBlob))
       } catch (err) {
         console.error("BG Removal Failed:", err)
