@@ -1,23 +1,485 @@
-import { ShoppingCart } from "lucide-react"
+"use client"
+
+import { useState, useEffect } from "react"
+import { ShoppingCart, Plus, CheckCircle2, Truck, Search, Upload, X, Package, ArrowRight } from "lucide-react"
+import * as XLSX from "xlsx"
+
+interface OrderItem {
+  id: string
+  customerName: string
+  phone: string
+  address: string
+  district: string
+  product: string
+  quantity: number
+  amount: number
+  deliveryCharge: number
+  status: 'new' | 'confirmed' | 'shipped'
+  source: string
+  courierName?: string
+  trackingNo?: string
+  createdAt: string
+  shippedAt?: string
+}
+
+const formatPhoneForCourier = (phone: string | number) => {
+  if (!phone) return "No Phone"
+  let cleaned = String(phone).replace(/[^\d+]/g, '')
+  // Courier APIs usually want 11 digits: 01xxxxxxxxx
+  if (cleaned.startsWith('+8801')) return cleaned.replace('+88', '')
+  if (cleaned.startsWith('8801')) return cleaned.substring(2)
+  if (cleaned.length === 10 && cleaned.startsWith('1')) return '0' + cleaned
+  return cleaned
+}
 
 export default function OrdersPage() {
+  const [activeTab, setActiveTab] = useState<'new' | 'confirmed' | 'shipped'>('new')
+  const [orders, setOrders] = useState<OrderItem[]>([])
+  const [search, setSearch] = useState('')
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
+  
+  // Modals
+  const [showAddModal, setShowAddModal] = useState(false)
+  const [showCourierModal, setShowCourierModal] = useState(false)
+  const [selectedCourier, setSelectedCourier] = useState('steadfast')
+
+  // New order form
+  const [nName, setNName] = useState('')
+  const [nPhone, setNPhone] = useState('')
+  const [nAddress, setNAddress] = useState('')
+  const [nDistrict, setNDistrict] = useState('')
+  const [nProduct, setNProduct] = useState('')
+  const [nQty, setNQty] = useState('1')
+  const [nAmount, setNAmount] = useState('')
+  const [nDelivery, setNDelivery] = useState('80')
+
+  // Excel Import State
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
+  const [uploadStep, setUploadStep] = useState(1)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [parsedData, setParsedData] = useState<any[]>([])
+  const [fileHeaders, setFileHeaders] = useState<string[]>([])
+  const [colMap, setColMap] = useState({
+    name: "", phone: "", address: "", district: "", product: "", quantity: "", amount: "", delivery: ""
+  })
+
+  useEffect(() => {
+    try {
+      const data = localStorage.getItem('bondhu_orders')
+      if (data) setOrders(JSON.parse(data))
+    } catch (e) { console.error(e) }
+  }, [])
+
+  const saveOrders = (updated: OrderItem[]) => {
+    setOrders(updated)
+    localStorage.setItem('bondhu_orders', JSON.stringify(updated))
+  }
+
+  const filtered = orders.filter(o => o.status === activeTab && (
+    o.customerName.toLowerCase().includes(search.toLowerCase()) ||
+    o.phone.includes(search) ||
+    o.product.toLowerCase().includes(search.toLowerCase())
+  ))
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
+  }
+
+  const selectAll = () => {
+    if (selectedIds.length === filtered.length) setSelectedIds([])
+    else setSelectedIds(filtered.map(o => o.id))
+  }
+
+  const handleAddOrder = () => {
+    if (!nName || !nPhone || !nProduct || !nAmount) return alert('সব ফিল্ড পূরণ করুন!')
+    const newOrder: OrderItem = {
+      id: 'ORD-' + Date.now(),
+      customerName: nName, 
+      phone: formatPhoneForCourier(nPhone), 
+      address: nAddress, 
+      district: nDistrict,
+      product: nProduct, 
+      quantity: Number(nQty), 
+      amount: Number(nAmount),
+      deliveryCharge: Number(nDelivery), 
+      status: 'new', 
+      source: 'Manual',
+      createdAt: new Date().toISOString()
+    }
+    saveOrders([newOrder, ...orders])
+    setShowAddModal(false)
+    setNName(''); setNPhone(''); setNAddress(''); setNDistrict(''); setNProduct(''); setNQty('1'); setNAmount(''); setNDelivery('80')
+  }
+
+  // --- EXCEL/CSV IMPORT LOGIC ---
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const file = e.target.files[0]
+      setSelectedFile(file)
+      
+      const reader = new FileReader()
+      reader.onload = (ev) => {
+        try {
+          const data = new Uint8Array(ev.target?.result as ArrayBuffer)
+          const workbook = XLSX.read(data, { type: 'array' })
+          const sheetName = workbook.SheetNames[0]
+          const sheet = workbook.Sheets[sheetName]
+          const json = XLSX.utils.sheet_to_json(sheet)
+          
+          if (json.length > 0) {
+            setParsedData(json)
+            setFileHeaders(Object.keys(json[0] as object))
+          }
+        } catch (error) {
+          alert("File parsing failed. Please upload a valid CSV or XLSX file.")
+        }
+      }
+      reader.readAsArrayBuffer(file)
+    }
+  }
+
+  const handleProcessMappedData = () => {
+    const newOrders = parsedData.map((row, index) => {
+      const rawPhone = colMap.phone ? row[colMap.phone] : ""
+      return {
+        id: 'IMP-' + Date.now() + '-' + index,
+        customerName: colMap.name ? String(row[colMap.name] || "Unknown") : "Unknown",
+        phone: formatPhoneForCourier(rawPhone),
+        address: colMap.address ? String(row[colMap.address] || "") : "",
+        district: colMap.district ? String(row[colMap.district] || "") : "",
+        product: colMap.product ? String(row[colMap.product] || "") : "",
+        quantity: colMap.quantity ? Number(row[colMap.quantity]) || 1 : 1,
+        amount: colMap.amount ? Number(row[colMap.amount]) || 0 : 0,
+        deliveryCharge: colMap.delivery ? Number(row[colMap.delivery]) || 80 : 80,
+        status: 'confirmed' as const, // Imported orders go straight to confirmed
+        source: 'Website Import',
+        createdAt: new Date().toISOString()
+      }
+    }).filter(o => o.phone && o.phone !== "No Phone")
+
+    if (newOrders.length > 0) {
+      saveOrders([...newOrders, ...orders])
+      alert(`✅ ${newOrders.length} টি অর্ডার সফলভাবে "Confirmed Orders"-এ ইম্পোর্ট হয়েছে!`)
+    }
+    
+    setIsUploadModalOpen(false)
+    setUploadStep(1)
+    setSelectedFile(null)
+    setParsedData([])
+    setColMap({ name: "", phone: "", address: "", district: "", product: "", quantity: "", amount: "", delivery: "" })
+  }
+
+  // --- WORKFLOW ACTIONS ---
+  const moveToConfirmed = () => {
+    if (selectedIds.length === 0) return alert('অর্ডার সিলেক্ট করুন!')
+    const updated = orders.map(o => selectedIds.includes(o.id) ? { ...o, status: 'confirmed' as const } : o)
+    saveOrders(updated)
+    setSelectedIds([])
+  }
+
+  const sendToCourier = () => {
+    if (selectedIds.length === 0) return alert('অর্ডার সিলেক্ট করুন!')
+    setShowCourierModal(true)
+  }
+
+  const confirmCourierEntry = () => {
+    const updated = orders.map(o => {
+      if (selectedIds.includes(o.id)) {
+        return {
+          ...o,
+          status: 'shipped' as const,
+          courierName: selectedCourier,
+          // Generate a fake tracking number for demo purposes
+          trackingNo: 'TRK-' + Math.random().toString(36).substr(2, 8).toUpperCase(),
+          shippedAt: new Date().toISOString(),
+          // Re-ensure phone is formatted
+          phone: formatPhoneForCourier(o.phone)
+        }
+      }
+      return o
+    })
+    saveOrders(updated)
+    setSelectedIds([])
+    setShowCourierModal(false)
+    alert(`✅ ${selectedIds.length} টি অর্ডার ${selectedCourier} কুরিয়ারে সফলভাবে এন্ট্রি হয়েছে এবং Shipped Orders এ চলে গেছে!`)
+  }
+
+  const newCount = orders.filter(o => o.status === 'new').length
+  const confirmedCount = orders.filter(o => o.status === 'confirmed').length
+  const shippedCount = orders.filter(o => o.status === 'shipped').length
+
+  const courierList = [
+    { id: 'steadfast', name: 'Steadfast Courier', color: 'text-blue-400' },
+    { id: 'pathao', name: 'Pathao Courier', color: 'text-rose-400' },
+    { id: 'redx', name: 'RedX Courier', color: 'text-red-400' },
+    { id: 'paperfly', name: 'Paperfly', color: 'text-amber-400' }
+  ]
+
   return (
-    <div className="p-8 space-y-8">
-      <div className="flex items-center justify-between">
+    <div className="p-4 md:p-8 space-y-6 max-w-7xl mx-auto text-zinc-100 bg-black min-h-screen pb-24">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Orders</h2>
-          <p className="text-muted-foreground mt-2">View and manage all orders synced from Bondhumart.</p>
+          <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-white flex items-center gap-2">
+            <ShoppingCart className="h-6 w-6 text-blue-500" /> Orders Management
+          </h2>
+          <p className="text-zinc-400 mt-1">Manage orders from Broadcast & Website. Auto courier entry system.</p>
+        </div>
+        <div className="flex gap-2">
+          <button onClick={() => setShowAddModal(true)} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2.5 rounded-xl font-medium text-sm transition-all active:scale-95">
+            <Plus className="h-4 w-4" /> Add Order
+          </button>
+          <button onClick={() => setIsUploadModalOpen(true)} className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2.5 rounded-xl font-medium text-sm transition-all active:scale-95 shadow-lg shadow-emerald-500/20">
+            <Upload className="h-4 w-4" /> Import Excel/CSV
+          </button>
         </div>
       </div>
-      <div className="glass-card rounded-2xl p-12 text-center flex flex-col items-center justify-center min-h-[400px]">
-        <div className="p-4 bg-primary/10 rounded-full mb-4">
-          <ShoppingCart className="h-8 w-8 text-primary" />
-        </div>
-        <h3 className="text-xl font-semibold mb-2">Syncing Orders...</h3>
-        <p className="text-muted-foreground max-w-md">
-          Orders will automatically appear here once the Webhook connection is fully established with your main Laravel website.
-        </p>
+
+      {/* Tabs */}
+      <div className="flex flex-wrap md:flex-nowrap items-center gap-2 bg-zinc-900/50 p-1.5 rounded-xl border border-zinc-800">
+        <button onClick={() => { setActiveTab('new'); setSelectedIds([]) }} className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg text-sm font-medium transition-all ${activeTab === 'new' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' : 'text-zinc-500 hover:text-zinc-300'}`}>
+          <Package className="h-4 w-4" /> New Orders <span className="bg-amber-500/20 text-amber-400 text-xs px-2 py-0.5 rounded-full">{newCount}</span>
+        </button>
+        <button onClick={() => { setActiveTab('confirmed'); setSelectedIds([]) }} className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg text-sm font-medium transition-all ${activeTab === 'confirmed' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' : 'text-zinc-500 hover:text-zinc-300'}`}>
+          <CheckCircle2 className="h-4 w-4" /> Confirmed <span className="bg-blue-500/20 text-blue-400 text-xs px-2 py-0.5 rounded-full">{confirmedCount}</span>
+        </button>
+        <button onClick={() => { setActiveTab('shipped'); setSelectedIds([]) }} className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg text-sm font-medium transition-all ${activeTab === 'shipped' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'text-zinc-500 hover:text-zinc-300'}`}>
+          <Truck className="h-4 w-4" /> Shipped <span className="bg-emerald-500/20 text-emerald-400 text-xs px-2 py-0.5 rounded-full">{shippedCount}</span>
+        </button>
       </div>
+
+      {/* Actions Bar */}
+      <div className="flex flex-col sm:flex-row gap-3 items-center justify-between">
+        <div className="relative w-full sm:w-96">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
+          <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search by name, phone, or product..." className="w-full bg-zinc-900 border border-zinc-800 text-white rounded-lg pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-blue-500" />
+        </div>
+        <div className="flex gap-2 w-full sm:w-auto justify-end">
+          {activeTab === 'new' && selectedIds.length > 0 && (
+            <button onClick={moveToConfirmed} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 rounded-xl text-sm font-medium transition-all active:scale-95 shadow-lg shadow-blue-500/20">
+              <CheckCircle2 className="h-4 w-4" /> Confirm Selected ({selectedIds.length})
+            </button>
+          )}
+          {activeTab === 'confirmed' && selectedIds.length > 0 && (
+            <button onClick={sendToCourier} className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-5 py-2.5 rounded-xl text-sm font-medium transition-all active:scale-95 shadow-lg shadow-emerald-500/20">
+              <Truck className="h-4 w-4" /> Send to Courier ({selectedIds.length})
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Table */}
+      <div className="bg-zinc-950 border border-zinc-800 rounded-2xl overflow-hidden shadow-2xl">
+        <div className="overflow-x-auto custom-scrollbar">
+          <table className="w-full text-left text-sm text-zinc-400">
+            <thead className="text-xs uppercase bg-zinc-900/50 text-zinc-500 border-b border-zinc-800">
+              <tr>
+                {(activeTab === 'new' || activeTab === 'confirmed') && (
+                  <th className="px-4 py-4 w-12"><input type="checkbox" checked={selectedIds.length === filtered.length && filtered.length > 0} onChange={selectAll} className="accent-blue-500 w-4 h-4 cursor-pointer" /></th>
+                )}
+                <th className="px-4 py-4 font-medium whitespace-nowrap">Order ID</th>
+                <th className="px-4 py-4 font-medium">Customer</th>
+                <th className="px-4 py-4 font-medium">Product</th>
+                <th className="px-4 py-4 font-medium">Amount</th>
+                <th className="px-4 py-4 font-medium">Source</th>
+                {activeTab === 'shipped' && <th className="px-4 py-4 font-medium">Courier</th>}
+                {activeTab === 'shipped' && <th className="px-4 py-4 font-medium">Tracking</th>}
+                <th className="px-4 py-4 font-medium">Date</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-zinc-800/50">
+              {filtered.length > 0 ? filtered.map(o => (
+                <tr key={o.id} className="hover:bg-zinc-900/30 transition-colors group">
+                  {(activeTab === 'new' || activeTab === 'confirmed') && (
+                    <td className="px-4 py-3"><input type="checkbox" checked={selectedIds.includes(o.id)} onChange={() => toggleSelect(o.id)} className="accent-blue-500 w-4 h-4 cursor-pointer" /></td>
+                  )}
+                  <td className="px-4 py-3 text-zinc-300 font-mono text-xs whitespace-nowrap">{o.id.slice(0, 12)}</td>
+                  <td className="px-4 py-3 min-w-[200px]">
+                    <div className="text-zinc-200 font-medium group-hover:text-blue-400 transition-colors">{o.customerName}</div>
+                    <div className="text-zinc-500 text-xs font-mono mt-0.5">{o.phone}</div>
+                    <div className="text-zinc-600 text-xs truncate max-w-[200px] mt-0.5">{o.address}</div>
+                  </td>
+                  <td className="px-4 py-3 text-zinc-300">
+                    <span className="font-medium">{o.product}</span> <span className="text-zinc-500">x{o.quantity}</span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="text-emerald-400 font-medium">৳{o.amount}</div>
+                    <div className="text-zinc-500 text-xs">Del: ৳{o.deliveryCharge}</div>
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className={`text-xs px-2.5 py-1 rounded-full ${o.source === 'Website Import' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : o.source === 'Manual' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' : 'bg-blue-500/10 text-blue-400 border border-blue-500/20'}`}>
+                      {o.source}
+                    </span>
+                  </td>
+                  {activeTab === 'shipped' && <td className="px-4 py-3 capitalize text-zinc-300 font-medium">{o.courierName}</td>}
+                  {activeTab === 'shipped' && <td className="px-4 py-3 font-mono text-xs text-blue-400">{o.trackingNo}</td>}
+                  <td className="px-4 py-3 text-zinc-500 text-xs whitespace-nowrap">{new Date(o.createdAt).toLocaleDateString('en-GB')}</td>
+                </tr>
+              )) : (
+                <tr>
+                  <td colSpan={10} className="px-6 py-24 text-center text-zinc-500">
+                    <Package className="h-12 w-12 mx-auto mb-4 opacity-20" />
+                    <p className="text-lg font-medium text-zinc-400">
+                      {activeTab === 'new' ? 'No new orders right now.' : activeTab === 'confirmed' ? 'No confirmed orders.' : 'No shipped orders yet.'}
+                    </p>
+                    <p className="text-sm mt-1">
+                      {activeTab === 'new' ? 'Wait for broadcasts or manually add one.' : activeTab === 'confirmed' ? 'Import from Excel or confirm new ones.' : 'Send confirmed orders to courier.'}
+                    </p>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Advanced Excel/CSV Import Modal (2 Steps) */}
+      {isUploadModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="bg-[#111] border border-zinc-800 rounded-2xl w-full max-w-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="p-5 border-b border-zinc-800 flex justify-between items-center bg-[#1a1a1a]">
+              <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                <Upload className="h-5 w-5 text-emerald-500" /> Import Confirmed Orders
+              </h3>
+              <button onClick={() => { setIsUploadModalOpen(false); setUploadStep(1); setParsedData([]) }} className="text-zinc-500 hover:text-white transition-colors">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            
+            <div className="p-6 overflow-y-auto custom-scrollbar flex-1">
+              {uploadStep === 1 && (
+                <div className="space-y-6">
+                  <div className="bg-emerald-500/10 border border-emerald-500/20 p-4 rounded-xl text-emerald-400 text-sm">
+                    <strong>Step 1:</strong> Upload your CSV or Excel (.xlsx) file containing confirmed website orders. You can map columns in the next step.
+                  </div>
+                  
+                  <label className="flex flex-col items-center justify-center border-2 border-dashed border-zinc-700 hover:border-emerald-500 rounded-2xl p-12 cursor-pointer transition-colors bg-zinc-900/50 group">
+                    <Upload className="h-10 w-10 text-zinc-500 group-hover:text-emerald-500 mb-4 transition-colors" />
+                    <span className="text-zinc-300 font-medium text-lg">Click to Upload File</span>
+                    <span className="text-zinc-500 text-sm mt-2">Supports .csv, .xls, .xlsx</span>
+                    <input type="file" accept=".csv, .xlsx, .xls" className="hidden" onChange={handleFileUpload} />
+                  </label>
+
+                  {parsedData.length > 0 && (
+                    <div className="flex justify-end">
+                      <button onClick={() => setUploadStep(2)} className="bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-2.5 rounded-xl font-medium flex items-center gap-2 transition-all">
+                        Map Columns <ArrowRight className="h-4 w-4" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {uploadStep === 2 && (
+                <div className="space-y-6">
+                  <div className="bg-blue-500/10 border border-blue-500/20 p-4 rounded-xl text-blue-400 text-sm">
+                    <strong>Step 2:</strong> Map your file's columns to BondhuOS order fields. Unmapped fields will be left blank.
+                  </div>
+
+                  <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
+                    <table className="w-full text-sm text-left">
+                      <thead className="bg-zinc-800 text-zinc-400 text-xs uppercase">
+                        <tr>
+                          <th className="px-4 py-3 w-1/3">Required Field</th>
+                          <th className="px-4 py-3">Your Excel Column</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-zinc-800/50">
+                        {[
+                          { key: 'name', label: 'Customer Name' },
+                          { key: 'phone', label: 'Phone Number (Crucial)' },
+                          { key: 'address', label: 'Full Address' },
+                          { key: 'district', label: 'District/City' },
+                          { key: 'product', label: 'Product Name' },
+                          { key: 'quantity', label: 'Quantity' },
+                          { key: 'amount', label: 'Total Amount (৳)' },
+                          { key: 'delivery', label: 'Delivery Charge (৳)' },
+                        ].map(field => (
+                          <tr key={field.key} className="hover:bg-zinc-800/30">
+                            <td className="px-4 py-3 font-medium text-zinc-300">{field.label}</td>
+                            <td className="px-4 py-3">
+                              <select 
+                                value={colMap[field.key as keyof typeof colMap]} 
+                                onChange={e => setColMap(prev => ({ ...prev, [field.key]: e.target.value }))}
+                                className="w-full bg-zinc-950 border border-zinc-700 text-white rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500"
+                              >
+                                <option value="">-- Ignore --</option>
+                                {fileHeaders.map(h => <option key={h} value={h}>{h}</option>)}
+                              </select>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <div className="flex justify-between mt-6">
+                    <button onClick={() => setUploadStep(1)} className="text-zinc-400 hover:text-white px-4 py-2 font-medium">Back</button>
+                    <button onClick={handleProcessMappedData} className="bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-2.5 rounded-xl font-medium flex items-center gap-2 transition-all shadow-lg shadow-emerald-500/20">
+                      <CheckCircle2 className="h-4 w-4" /> Import {parsedData.length} Orders
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Courier Selection Modal */}
+      {showCourierModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="bg-[#111] border border-zinc-800 rounded-2xl w-full max-w-md shadow-2xl">
+            <div className="p-5 border-b border-zinc-800 flex justify-between items-center"><h3 className="text-lg font-bold text-white flex items-center gap-2"><Truck className="h-5 w-5 text-emerald-500" /> Select Courier</h3><button onClick={() => setShowCourierModal(false)} className="text-zinc-500 hover:text-white"><X className="h-5 w-5" /></button></div>
+            <div className="p-6 space-y-3">
+              <div className="bg-amber-500/10 border border-amber-500/20 p-3 rounded-lg text-amber-400 text-xs mb-4">
+                Phone numbers will automatically have <b>+88</b> stripped and properly formatted for courier APIs.
+              </div>
+              <p className="text-sm text-zinc-400 mb-4">{selectedIds.length} টি অর্ডার কুরিয়ারে পাঠানো হবে। কুরিয়ার সিলেক্ট করুন:</p>
+              {courierList.map(c => (
+                <button key={c.id} onClick={() => setSelectedCourier(c.id)} className={`w-full flex items-center gap-3 p-3 rounded-xl border text-left transition-all ${selectedCourier === c.id ? 'border-emerald-500 bg-emerald-500/10 shadow-[0_0_15px_rgba(16,185,129,0.1)]' : 'border-zinc-800 hover:bg-zinc-900'}`}>
+                  <Truck className={`h-5 w-5 ${c.color}`} />
+                  <span className={`font-medium text-sm ${selectedCourier === c.id ? 'text-emerald-400' : 'text-zinc-300'}`}>{c.name}</span>
+                  {selectedCourier === c.id && <CheckCircle2 className="h-4 w-4 text-emerald-500 ml-auto" />}
+                </button>
+              ))}
+            </div>
+            <div className="p-5 border-t border-zinc-800 flex gap-3 justify-end">
+              <button onClick={() => setShowCourierModal(false)} className="px-4 py-2 text-sm text-zinc-400 hover:text-white">Cancel</button>
+              <button onClick={confirmCourierEntry} className="bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-2.5 rounded-xl text-sm font-medium flex items-center gap-2 shadow-lg shadow-emerald-500/20"><Truck className="h-4 w-4" /> Confirm & Auto-Ship</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Manual Order Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="bg-[#111] border border-zinc-800 rounded-2xl w-full max-w-lg shadow-2xl">
+            <div className="p-5 border-b border-zinc-800 flex justify-between items-center"><h3 className="text-lg font-bold text-white flex items-center gap-2"><Plus className="h-5 w-5 text-blue-500" /> Add New Order</h3><button onClick={() => setShowAddModal(false)} className="text-zinc-500 hover:text-white"><X className="h-5 w-5" /></button></div>
+            <div className="p-6 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div><label className="block text-xs text-zinc-400 mb-1">Customer Name *</label><input value={nName} onChange={e => setNName(e.target.value)} className="w-full bg-zinc-900 border border-zinc-800 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500" /></div>
+                <div><label className="block text-xs text-zinc-400 mb-1">Phone *</label><input value={nPhone} onChange={e => setNPhone(e.target.value)} className="w-full bg-zinc-900 border border-zinc-800 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500" /></div>
+              </div>
+              <div><label className="block text-xs text-zinc-400 mb-1">Address</label><input value={nAddress} onChange={e => setNAddress(e.target.value)} className="w-full bg-zinc-900 border border-zinc-800 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500" /></div>
+              <div className="grid grid-cols-2 gap-4">
+                <div><label className="block text-xs text-zinc-400 mb-1">District</label><input value={nDistrict} onChange={e => setNDistrict(e.target.value)} className="w-full bg-zinc-900 border border-zinc-800 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500" /></div>
+                <div><label className="block text-xs text-zinc-400 mb-1">Product *</label><input value={nProduct} onChange={e => setNProduct(e.target.value)} className="w-full bg-zinc-900 border border-zinc-800 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500" /></div>
+              </div>
+              <div className="grid grid-cols-3 gap-4">
+                <div><label className="block text-xs text-zinc-400 mb-1">Qty</label><input type="number" value={nQty} onChange={e => setNQty(e.target.value)} className="w-full bg-zinc-900 border border-zinc-800 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500" /></div>
+                <div><label className="block text-xs text-zinc-400 mb-1">Amount (৳) *</label><input type="number" value={nAmount} onChange={e => setNAmount(e.target.value)} className="w-full bg-zinc-900 border border-zinc-800 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500" /></div>
+                <div><label className="block text-xs text-zinc-400 mb-1">Delivery (৳)</label><input type="number" value={nDelivery} onChange={e => setNDelivery(e.target.value)} className="w-full bg-zinc-900 border border-zinc-800 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500" /></div>
+              </div>
+            </div>
+            <div className="p-5 border-t border-zinc-800 flex gap-3 justify-end">
+              <button onClick={() => setShowAddModal(false)} className="px-4 py-2 text-sm text-zinc-400 hover:text-white">Cancel</button>
+              <button onClick={handleAddOrder} className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2.5 rounded-xl text-sm font-medium">Add Order</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
