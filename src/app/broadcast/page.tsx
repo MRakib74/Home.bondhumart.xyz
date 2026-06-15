@@ -136,8 +136,42 @@ export default function BroadcastPage() {
   const [aiPrompt, setAiPrompt] = useState("")
   const [messageTemplate, setMessageTemplate] = useState("হ্যালো [Name],\n\nআপনার কেনা [Product] এর জন্য বিশেষ অফার! আজই অর্ডার কনফার্ম করলে পাচ্ছেন ২০% ছাড়।\n\nঅফারটি পেতে ভিজিট করুন: [Link]")
   const [mediaLink, setMediaLink] = useState("")
+  const [attachedFiles, setAttachedFiles] = useState<File[]>([])
   const [isGenerating, setIsGenerating] = useState(false)
   const [isSending, setIsSending] = useState(false)
+
+  // AI Ad Studio State
+  const [aiProductImg, setAiProductImg] = useState<File | null>(null)
+  const [aiModelImg, setAiModelImg] = useState<File | null>(null)
+  const [aiAdPrompt, setAiAdPrompt] = useState("")
+  const [aiAdStyle, setAiAdStyle] = useState("billboard")
+  const [isGeneratingAd, setIsGeneratingAd] = useState(false)
+  const [generatedAds, setGeneratedAds] = useState<string[]>([])
+
+  const handleGenerateAd = () => {
+    if (!aiProductImg) return alert("Please upload a product image first!");
+    setIsGeneratingAd(true)
+    setTimeout(() => {
+      // Mock generated images
+      setGeneratedAds(prev => [
+        `https://picsum.photos/seed/${Math.random()}/400/600`,
+        ...prev
+      ])
+      setIsGeneratingAd(false)
+    }, 2500)
+  }
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      setAttachedFiles(prev => [...prev, ...Array.from(e.target.files!)])
+    }
+  }
+
+  const handleDropToAttach = (url: string) => {
+    // In a real app we'd convert the URL to a blob/file, or just store the URL.
+    // For mock, we'll push it to an array or just set it as mediaLink to keep it simple.
+    setMediaLink(url)
+  }
 
   // API Config State
   // Evolution
@@ -384,27 +418,145 @@ export default function BroadcastPage() {
               {(activeTab === 'whatsapp' || activeTab === 'gmail') && (
                 <div className="pt-4 border-t border-zinc-800">
                   <label className="block text-sm font-medium text-zinc-300 mb-2">Attach Media (Photo/Video/Link)</label>
-                  <div className="flex flex-wrap gap-3">
-                    <button className="flex items-center gap-2 bg-zinc-900 border border-zinc-700 hover:bg-zinc-800 text-zinc-300 px-4 py-2 rounded-lg text-sm transition-colors">
+                  <div className="flex flex-wrap gap-3 mb-3">
+                    <label className="flex items-center gap-2 bg-zinc-900 border border-zinc-700 hover:bg-zinc-800 text-zinc-300 px-4 py-2 rounded-lg text-sm transition-colors cursor-pointer">
                       <ImageIcon className="h-4 w-4 text-pink-400" /> Upload Image
-                    </button>
-                    <button className="flex items-center gap-2 bg-zinc-900 border border-zinc-700 hover:bg-zinc-800 text-zinc-300 px-4 py-2 rounded-lg text-sm transition-colors">
+                      <input type="file" accept="image/*" multiple className="hidden" onChange={handleFileChange} />
+                    </label>
+                    <label className="flex items-center gap-2 bg-zinc-900 border border-zinc-700 hover:bg-zinc-800 text-zinc-300 px-4 py-2 rounded-lg text-sm transition-colors cursor-pointer">
                       <Video className="h-4 w-4 text-emerald-400" /> Upload Video
-                    </button>
+                      <input type="file" accept="video/*" multiple className="hidden" onChange={handleFileChange} />
+                    </label>
                     <div className="flex items-center gap-2 bg-zinc-900 border border-zinc-700 rounded-lg px-2 flex-1 min-w-[200px]">
                       <LinkIcon className="h-4 w-4 text-zinc-500 ml-2 shrink-0" />
                       <input 
                         type="url" 
                         value={mediaLink}
                         onChange={(e) => setMediaLink(e.target.value)}
-                        placeholder="https://yourwebsite.com/product" 
-                        className="w-full bg-transparent border-none text-white text-sm py-2 focus:outline-none px-2"
+                        onDrop={(e) => {
+                          e.preventDefault()
+                          const url = e.dataTransfer.getData('text/plain')
+                          if(url) setMediaLink(url)
+                        }}
+                        onDragOver={(e) => e.preventDefault()}
+                        placeholder="Drop AI generated image here, or type link..." 
+                        className="w-full bg-transparent text-white py-2 focus:outline-none text-sm placeholder-zinc-600"
                       />
                     </div>
                   </div>
+                  
+                  {attachedFiles.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {attachedFiles.map((f, i) => (
+                        <div key={i} className="flex items-center gap-2 bg-zinc-800/50 border border-zinc-700 rounded-md px-3 py-1.5 text-xs text-zinc-300">
+                          {f.type.includes('image') ? <ImageIcon className="h-3 w-3 text-pink-400" /> : <Video className="h-3 w-3 text-emerald-400" />}
+                          <span className="truncate max-w-[100px]">{f.name}</span>
+                          <button onClick={() => setAttachedFiles(prev => prev.filter((_, idx) => idx !== i))} className="text-zinc-500 hover:text-red-400 ml-1"><X className="h-3 w-3"/></button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
+          </div>
+
+          {/* AI Ad Studio Section */}
+          <div className="bg-zinc-950 border border-zinc-800 rounded-2xl p-6">
+            <h3 className="text-lg font-bold text-white flex items-center gap-2 mb-4">
+              <ImageIcon className="h-5 w-5 text-fuchsia-400" /> AI Ad Studio <span className="bg-fuchsia-500/20 text-fuchsia-400 text-[10px] px-2 py-0.5 rounded-full border border-fuchsia-500/30">Beta</span>
+            </h3>
+            <p className="text-xs text-zinc-400 mb-6">Generate premium ad visuals (Billboard, Handheld Model etc.) by combining your product photo and an AI prompt. Drag the result to the Media box above.</p>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
+              <div className="border border-dashed border-zinc-700 bg-zinc-900/50 rounded-xl p-4 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-zinc-800 transition-colors relative overflow-hidden group">
+                {aiProductImg ? (
+                  <>
+                    <img src={URL.createObjectURL(aiProductImg)} className="absolute inset-0 w-full h-full object-cover opacity-50" alt="product" />
+                    <CheckCircle2 className="h-8 w-8 text-emerald-500 relative z-10 mb-2" />
+                    <span className="relative z-10 text-xs font-medium text-emerald-400">Product Uploaded</span>
+                  </>
+                ) : (
+                  <>
+                    <ImageIcon className="h-6 w-6 text-zinc-500 mb-2 group-hover:scale-110 transition-transform" />
+                    <span className="text-sm text-zinc-300 font-medium">Upload Product (Required)</span>
+                    <span className="text-xs text-zinc-500 mt-1">Clear background works best</span>
+                  </>
+                )}
+                <input type="file" accept="image/*" onChange={(e) => e.target.files && setAiProductImg(e.target.files[0])} className="absolute inset-0 opacity-0 cursor-pointer" />
+              </div>
+              
+              <div className="border border-dashed border-zinc-700 bg-zinc-900/50 rounded-xl p-4 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-zinc-800 transition-colors relative overflow-hidden group">
+                {aiModelImg ? (
+                  <>
+                    <img src={URL.createObjectURL(aiModelImg)} className="absolute inset-0 w-full h-full object-cover opacity-50" alt="model" />
+                    <CheckCircle2 className="h-8 w-8 text-emerald-500 relative z-10 mb-2" />
+                    <span className="relative z-10 text-xs font-medium text-emerald-400">Model Uploaded</span>
+                  </>
+                ) : (
+                  <>
+                    <Users className="h-6 w-6 text-zinc-500 mb-2 group-hover:scale-110 transition-transform" />
+                    <span className="text-sm text-zinc-300 font-medium">Upload Model (Optional)</span>
+                    <span className="text-xs text-zinc-500 mt-1">Your own model or face</span>
+                  </>
+                )}
+                <input type="file" accept="image/*" onChange={(e) => e.target.files && setAiModelImg(e.target.files[0])} className="absolute inset-0 opacity-0 cursor-pointer" />
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-zinc-400 mb-2">Ad Style</label>
+                <div className="flex gap-2 overflow-x-auto custom-scrollbar pb-2">
+                  {['Billboard', 'Handheld', 'Bedroom', 'Studio', 'Nature'].map(style => (
+                    <button 
+                      key={style}
+                      onClick={() => setAiAdStyle(style.toLowerCase())}
+                      className={`px-4 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${aiAdStyle === style.toLowerCase() ? 'bg-fuchsia-600 text-white' : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'}`}
+                    >
+                      {style}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              
+              <div className="flex gap-2">
+                <input 
+                  type="text" 
+                  value={aiAdPrompt}
+                  onChange={(e) => setAiAdPrompt(e.target.value)}
+                  placeholder="e.g., Make it look like a premium billboard ad..." 
+                  className="w-full bg-[#111] border border-zinc-800 text-white rounded-lg px-4 py-2.5 focus:outline-none focus:border-fuchsia-500 text-sm"
+                />
+                <button onClick={handleGenerateAd} disabled={isGeneratingAd || !aiProductImg} className="bg-fuchsia-600 hover:bg-fuchsia-500 text-white px-5 py-2.5 rounded-lg font-medium whitespace-nowrap disabled:opacity-50 flex items-center gap-2 text-sm transition-all active:scale-95 shadow-[0_0_15px_rgba(192,38,211,0.3)]">
+                  {isGeneratingAd ? <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" /> : <Sparkles className="h-4 w-4" />}
+                  Create Ad
+                </button>
+              </div>
+            </div>
+
+            {/* Generated Gallery */}
+            {generatedAds.length > 0 && (
+              <div className="mt-6 border-t border-zinc-800 pt-5">
+                <label className="block text-xs font-medium text-zinc-400 mb-3">Generated Ads (Drag to link box)</label>
+                <div className="grid grid-cols-3 gap-3">
+                  {generatedAds.map((url, i) => (
+                    <div key={i} className="aspect-[3/4] bg-zinc-900 rounded-lg border border-zinc-800 overflow-hidden group relative">
+                      <img 
+                        src={url} 
+                        draggable 
+                        onDragStart={(e) => e.dataTransfer.setData('text/plain', url)}
+                        alt="AI Generated" 
+                        className="w-full h-full object-cover cursor-grab active:cursor-grabbing hover:scale-105 transition-transform" 
+                      />
+                      <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                        <span className="text-white text-xs font-medium bg-black/80 px-2 py-1 rounded">Drag Me</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
