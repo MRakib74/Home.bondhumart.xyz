@@ -22,7 +22,7 @@ export default function BroadcastPage() {
   const [fProduct, setFProduct] = useState('')
   const [fMinPrice, setFMinPrice] = useState('')
   const [fMaxPrice, setFMaxPrice] = useState('')
-  const [fLoyal, setFLoyal] = useState(false)
+  const [fMinOrders, setFMinOrders] = useState('')
 
   // Recalculate stats helper
   const updateAudienceStats = (filtered: any[]) => {
@@ -124,8 +124,8 @@ export default function BroadcastPage() {
     }
 
     // Loyal (Multi-order)
-    if (fLoyal) {
-      filtered = filtered.filter(c => (c.totalOrders || 0) > 1)
+    if (fMinOrders) {
+      filtered = filtered.filter(c => (c.totalOrders || 0) >= Number(fMinOrders))
     }
     
     updateAudienceStats(filtered)
@@ -276,11 +276,9 @@ export default function BroadcastPage() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-3 pt-2">
-                <button onClick={() => setFLoyal(!fLoyal)} className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${fLoyal ? 'bg-orange-500' : 'bg-zinc-700'}`}>
-                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${fLoyal ? 'translate-x-6' : 'translate-x-1'}`} />
-                </button>
-                <span className="text-sm font-medium text-zinc-300">Only loyal customers (&gt;1 order)</span>
+              <div>
+                <label className="block text-sm font-medium text-zinc-300 mb-2">Minimum Orders (Loyal Customers)</label>
+                <input type="number" value={fMinOrders} onChange={e=>setFMinOrders(e.target.value)} placeholder="e.g. 2, 3..." className="w-full bg-[#1a1a1a] border border-zinc-800 text-white rounded-lg px-4 py-2.5 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 text-sm" />
               </div>
             </div>
 
