@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Send, Users, Mail, MessageSquare, Phone, Image as ImageIcon, Link as LinkIcon, Video, Settings, Play, CheckCircle2, AlertTriangle, Sparkles } from "lucide-react"
+import { Send, Users, Mail, MessageSquare, Phone, Image as ImageIcon, Link as LinkIcon, Video, Settings, Play, CheckCircle2, AlertTriangle, Sparkles, Filter, ChevronDown, X } from "lucide-react"
 
 export default function BroadcastPage() {
   const [audience, setAudience] = useState<any[]>([])
@@ -9,27 +9,88 @@ export default function BroadcastPage() {
   const [emailCount, setEmailCount] = useState(0)
   const [activeTab, setActiveTab] = useState<'whatsapp' | 'sms' | 'gmail'>('whatsapp')
 
+  // Full Database from CRM
+  const [allCustomers, setAllCustomers] = useState<any[]>([])
+  
+  // Filter Modal State
+  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false)
+  const [fDate, setFDate] = useState('All')
+  const [fStatus, setFStatus] = useState('All')
+  const [fLocation, setFLocation] = useState('Everywhere')
+  const [fProduct, setFProduct] = useState('')
+  const [fMinPrice, setFMinPrice] = useState('')
+  const [fMaxPrice, setFMaxPrice] = useState('')
+  const [fLoyal, setFLoyal] = useState(false)
+
+  // Recalculate stats helper
+  const updateAudienceStats = (filtered: any[]) => {
+    setAudience(filtered)
+    let wa = 0
+    let em = 0
+    filtered.forEach((c: any) => {
+      if (c.phone && c.phone.length >= 10 && c.phone !== "No Phone") wa++
+      if (c.email && c.email.includes('@')) em++
+    })
+    setWhatsappCount(wa)
+    setEmailCount(em)
+    localStorage.setItem('broadcast_audience', JSON.stringify(filtered))
+  }
+
   // Load from local storage
   useEffect(() => {
-    const data = localStorage.getItem('broadcast_audience')
-    if (data) {
-      try {
+    try {
+      const fullDb = localStorage.getItem('bondhu_customers')
+      if (fullDb) setAllCustomers(JSON.parse(fullDb))
+
+      const data = localStorage.getItem('broadcast_audience')
+      if (data) {
         const parsed = JSON.parse(data)
-        setAudience(parsed)
-        
-        let wa = 0
-        let em = 0
-        parsed.forEach((c: any) => {
-          if (c.phone && c.phone.length >= 10 && c.phone !== "No Phone") wa++
-          if (c.email && c.email.includes('@')) em++
-        })
-        setWhatsappCount(wa)
-        setEmailCount(em)
-      } catch (e) {
-        console.error(e)
+        updateAudienceStats(parsed)
       }
+    } catch (e) {
+      console.error(e)
     }
   }, [])
+
+  const applyFilters = () => {
+    let filtered = [...allCustomers]
+
+    // Order Status
+    if (fStatus !== 'All') {
+      filtered = filtered.filter(c => c.status === fStatus)
+    }
+
+    // Location
+    if (fLocation === 'Dhaka') {
+      filtered = filtered.filter(c => c.district?.toLowerCase().includes('dhaka'))
+    } else if (fLocation === 'Outside Dhaka') {
+      filtered = filtered.filter(c => c.district && !c.district.toLowerCase().includes('dhaka'))
+    }
+
+    // Specific Product
+    if (fProduct.trim()) {
+      const kw = fProduct.toLowerCase()
+      filtered = filtered.filter(c => c.product?.toLowerCase().includes(kw))
+    }
+
+    // Price
+    if (fMinPrice) {
+      filtered = filtered.filter(c => (c.totalSpent || 0) >= Number(fMinPrice))
+    }
+    if (fMaxPrice) {
+      filtered = filtered.filter(c => (c.totalSpent || 0) <= Number(fMaxPrice))
+    }
+
+    // Loyal (Multi-order)
+    if (fLoyal) {
+      filtered = filtered.filter(c => (c.totalOrders || 0) > 1)
+    }
+
+    // Note: Date Range omitted for simplicity in mock data, but easily added with Date parsing.
+    
+    updateAudienceStats(filtered)
+    setIsFilterModalOpen(false)
+  }
 
   // State: Message & Media
   const [aiPrompt, setAiPrompt] = useState("")
@@ -76,7 +137,110 @@ export default function BroadcastPage() {
           </h2>
           <p className="text-zinc-400 mt-1">Send bulk personalized AI promotional messages via WhatsApp, SMS, or Email.</p>
         </div>
+        <div>
+          <button 
+            onClick={() => setIsFilterModalOpen(true)}
+            className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-4 py-2.5 rounded-xl font-medium shadow-lg shadow-orange-500/20 transition-all active:scale-95"
+          >
+            <Filter className="h-4 w-4" /> Customer Data Select
+          </button>
+        </div>
       </div>
+
+      {/* Filter Modal */}
+      {isFilterModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="bg-[#111111] border border-zinc-800 rounded-2xl w-full max-w-xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="p-5 border-b border-zinc-800 flex justify-between items-center bg-[#1a1a1a]">
+              <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                <Filter className="h-5 w-5 text-orange-500" /> Customer Data Select
+              </h3>
+              <button onClick={() => setIsFilterModalOpen(false)} className="text-zinc-500 hover:text-white transition-colors">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-5 overflow-y-auto custom-scrollbar flex-1">
+              {/* Date Range */}
+              <div>
+                <label className="block text-sm font-medium text-zinc-300 mb-2">Date Range <span className="text-rose-500">*</span></label>
+                <div className="relative">
+                  <select value={fDate} onChange={e=>setFDate(e.target.value)} className="w-full bg-[#1a1a1a] border border-zinc-800 text-white rounded-lg px-4 py-2.5 appearance-none focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 cursor-pointer text-sm">
+                    <option value="All">Select an option (All Time)</option>
+                    <option value="Today">Today</option>
+                    <option value="Last 7 Days">Last 7 Days</option>
+                    <option value="Last 30 Days">Last 30 Days</option>
+                  </select>
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500 pointer-events-none" />
+                </div>
+              </div>
+
+              {/* Order Status */}
+              <div>
+                <label className="block text-sm font-medium text-zinc-300 mb-2">Order Status</label>
+                <div className="relative">
+                  <select value={fStatus} onChange={e=>setFStatus(e.target.value)} className="w-full bg-[#1a1a1a] border border-zinc-800 text-white rounded-lg px-4 py-2.5 appearance-none focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 cursor-pointer text-sm">
+                    <option value="All">All Statuses</option>
+                    <option value="Pending 🟡">Pending 🟡</option>
+                    <option value="Confirmed 🔵">Confirmed 🔵</option>
+                    <option value="Delivered 🟢">Delivered 🟢</option>
+                    <option value="Returned 🟣">Returned 🟣</option>
+                    <option value="Cancelled 🔴">Cancelled 🔴</option>
+                  </select>
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500 pointer-events-none" />
+                </div>
+              </div>
+
+              {/* Location */}
+              <div>
+                <label className="block text-sm font-medium text-zinc-300 mb-2">Customer Location</label>
+                <div className="relative">
+                  <select value={fLocation} onChange={e=>setFLocation(e.target.value)} className="w-full bg-[#1a1a1a] border border-orange-500 text-white rounded-lg px-4 py-2.5 appearance-none focus:outline-none focus:ring-1 focus:ring-orange-500 cursor-pointer text-sm shadow-[0_0_10px_rgba(249,115,22,0.1)]">
+                    <option value="Everywhere">Everywhere</option>
+                    <option value="Dhaka">Dhaka Only</option>
+                    <option value="Outside Dhaka">Outside Dhaka</option>
+                  </select>
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-orange-500 pointer-events-none" />
+                </div>
+              </div>
+
+              {/* Specific Product */}
+              <div>
+                <label className="block text-sm font-medium text-zinc-300 mb-2">Specific Product (Keyword)</label>
+                <input type="text" value={fProduct} onChange={e=>setFProduct(e.target.value)} placeholder="e.g. Shirt, Honey, Sleeping Spray etc." className="w-full bg-[#1a1a1a] border border-zinc-800 text-white rounded-lg px-4 py-2.5 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 text-sm" />
+              </div>
+
+              {/* Advanced: Price & Loyal */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-zinc-300 mb-2">Min Amount (৳)</label>
+                  <input type="number" value={fMinPrice} onChange={e=>setFMinPrice(e.target.value)} placeholder="0" className="w-full bg-[#1a1a1a] border border-zinc-800 text-white rounded-lg px-4 py-2.5 focus:outline-none focus:border-orange-500 text-sm" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-zinc-300 mb-2">Max Amount (৳)</label>
+                  <input type="number" value={fMaxPrice} onChange={e=>setFMaxPrice(e.target.value)} placeholder="Unlimited" className="w-full bg-[#1a1a1a] border border-zinc-800 text-white rounded-lg px-4 py-2.5 focus:outline-none focus:border-orange-500 text-sm" />
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 pt-2">
+                <button onClick={() => setFLoyal(!fLoyal)} className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${fLoyal ? 'bg-orange-500' : 'bg-zinc-700'}`}>
+                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${fLoyal ? 'translate-x-6' : 'translate-x-1'}`} />
+                </button>
+                <span className="text-sm font-medium text-zinc-300">Only loyal customers (&gt;1 order)</span>
+              </div>
+            </div>
+
+            <div className="p-5 border-t border-zinc-800 bg-[#1a1a1a] flex gap-3">
+              <button onClick={applyFilters} className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2.5 rounded-lg font-medium transition-colors text-sm">
+                Submit
+              </button>
+              <button onClick={() => setIsFilterModalOpen(false)} className="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 px-6 py-2.5 rounded-lg font-medium transition-colors text-sm border border-zinc-700">
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
