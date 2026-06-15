@@ -260,8 +260,7 @@ export default function OrdersPage() {
           .summary { margin-top: 15px; border-top: 2px solid #e4e4e7; padding-top: 10px; }
           .summary-row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 13px; color: #52525b; }
           .total-row { background: #18181b; color: white; padding: 12px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; font-weight: bold; font-size: 16px; margin-top: 10px; }
-          .footer { text-align: center; margin-top: 25px; font-size: 11px; color: #a1a1aa; border-top: 1px dashed #e4e4e7; padding-top: 15px; }
-          .courier-info { text-align: center; background: #f4f4f5; padding: 10px; border-radius: 6px; margin-top: 15px; font-size: 12px; font-weight: bold; border: 1px dashed #d4d4d8; }
+          .courier-info { text-align: center; background: #f4f4f5; padding: 10px; border-radius: 6px; margin-top: 15px; font-size: 13px; font-weight: bold; border: 1px dashed #d4d4d8; }
           @media print { body { width: 100%; padding: 0; } }
         </style>
       </head>
@@ -316,16 +315,11 @@ export default function OrdersPage() {
           <div class="total-row"><span>TOTAL (COD)</span><span style="color: #10b981;">৳ ${total}</span></div>
         </div>
 
-        ${selectedOrder.trackingNo ? `
+        ${selectedOrder.consignmentId ? `
         <div class="courier-info">
-          Courier: ${selectedOrder.courierName?.toUpperCase()} | Tracking: ${selectedOrder.trackingNo}
+          Courier: ${selectedOrder.courierName?.toUpperCase()} | Courier ID: ${selectedOrder.consignmentId}
         </div>` : ''}
 
-        <div class="footer">
-          <strong style="color: #10b981; font-size: 13px;">Thank you for your order! 🎉</strong><br/>
-          <div style="margin-top: 6px;">Delivery Time: 3-5 Working Days</div>
-          <div style="margin-top: 4px;">BondhuOS System &bull; ${new Date().toLocaleDateString()}</div>
-        </div>
       </body>
       </html>
     `;
