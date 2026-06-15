@@ -45,6 +45,34 @@ const extractAddressInfo = (fullAddress: string) => {
   return { district: foundDistrict, thana: foundThana };
 }
 
+const formatPhoneNumber = (phone: string | number) => {
+  if (!phone) return "No Phone";
+  let cleaned = String(phone).replace(/[^\d+]/g, '');
+  
+  if (cleaned.startsWith('+8801') && cleaned.length === 14) return cleaned;
+  if (cleaned.startsWith('8801') && cleaned.length === 13) return '+' + cleaned;
+  
+  // If Excel dropped the leading zero, e.g., 1712345678 (10 digits)
+  if (cleaned.length === 10 && cleaned.startsWith('1')) {
+    cleaned = '0' + cleaned;
+  }
+  
+  return cleaned || "No Phone";
+}
+
+const parseExcelDate = (excelDate: any) => {
+  if (!excelDate) return "";
+  // If it's a string that can't be purely parsed as a number, return as is
+  if (isNaN(Number(excelDate))) return String(excelDate);
+  
+  const serial = Number(excelDate);
+  // Convert Excel serial date to JS Date
+  const d = new Date((serial - 25569) * 86400 * 1000);
+  if (isNaN(d.getTime())) return String(excelDate);
+  
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
 const COLUMN_DEF = {
   customerInfo: { label: 'Customer Info' },
   orderId: { label: 'Order ID' },
@@ -161,7 +189,7 @@ export default function CustomersPage() {
       return {
         id: Date.now() + index,
         name: colMap.name ? String(row[colMap.name] || "") : "Unknown",
-        phone: colMap.phone ? String(row[colMap.phone] || "") : "No Phone",
+        phone: colMap.phone ? formatPhoneNumber(row[colMap.phone]) : "No Phone",
         email: "",
         district: district,
         thana: thana,
@@ -171,7 +199,7 @@ export default function CustomersPage() {
         deliveryCharge: colMap.deliveryCharge ? Number(row[colMap.deliveryCharge]) || 0 : 0,
         totalOrders: 1,
         totalSpent: colMap.totalSpent ? Number(row[colMap.totalSpent]) || 0 : 0,
-        date: colMap.date ? String(row[colMap.date] || "") : new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
+        date: colMap.date ? parseExcelDate(row[colMap.date]) : new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
         status: uploadTargetSegment
       }
     })
