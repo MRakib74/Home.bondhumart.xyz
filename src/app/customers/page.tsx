@@ -6,10 +6,10 @@ import Papa from "papaparse"
 
 // Extended mock data based on user requirements
 const initialCustomers = [
-  { id: 1, name: "Rakib Raja", phone: "01819XXXXXX", email: "rakib@example.com", district: "Dhaka", thana: "Mirpur", address: "Mirpur 10", product: "AI Course", orderId: "ORD-101", deliveryCharge: 60, totalOrders: 5, totalSpent: 12500, status: "Delivered 🟢" },
-  { id: 2, name: "Tanvir Ahmed", phone: "01712XXXXXX", email: "tanvir@example.com", district: "Chattogram", thana: "Panchlaish", address: "O.R. Nizam Road", product: "Web Dev Course", orderId: "ORD-102", deliveryCharge: 100, totalOrders: 1, totalSpent: 1200, status: "Pending 🟡" },
-  { id: 3, name: "Sajid Hasan", phone: "01614XXXXXX", email: "", district: "Sylhet", thana: "Zindabazar", address: "Zindabazar Road", product: "SEO Mastery", orderId: "ORD-103", deliveryCharge: 120, totalOrders: 2, totalSpent: 3400, status: "Returned 🟣" },
-  { id: 4, name: "Mehedi", phone: "01915XXXXXX", email: "", district: "", thana: "", address: "", product: "", orderId: "", deliveryCharge: 0, totalOrders: 0, totalSpent: 0, status: "Raw Leads 📱" },
+  { id: 1, name: "Rakib Raja", phone: "01819XXXXXX", email: "rakib@example.com", district: "Dhaka", thana: "Mirpur", address: "Mirpur 10", product: "AI Course", orderId: "ORD-101", deliveryCharge: 60, totalOrders: 5, totalSpent: 12500, date: "15 Jun 2026", status: "Delivered 🟢" },
+  { id: 2, name: "Tanvir Ahmed", phone: "01712XXXXXX", email: "tanvir@example.com", district: "Chattogram", thana: "Panchlaish", address: "O.R. Nizam Road", product: "Web Dev Course", orderId: "ORD-102", deliveryCharge: 100, totalOrders: 1, totalSpent: 1200, date: "14 Jun 2026", status: "Pending 🟡" },
+  { id: 3, name: "Sajid Hasan", phone: "01614XXXXXX", email: "", district: "Sylhet", thana: "Zindabazar", address: "Zindabazar Road", product: "SEO Mastery", orderId: "ORD-103", deliveryCharge: 120, totalOrders: 2, totalSpent: 3400, date: "10 Jun 2026", status: "Returned 🟣" },
+  { id: 4, name: "Mehedi", phone: "01915XXXXXX", email: "", district: "", thana: "", address: "", product: "", orderId: "", deliveryCharge: 0, totalOrders: 0, totalSpent: 0, date: "-", status: "Raw Leads 📱" },
 ]
 
 const TABS = ['All', 'Pending 🟡', 'Confirmed 🔵', 'Delivered 🟢', 'Returned 🟣', 'Hold 🟠', 'Cancelled 🔴', 'Raw Leads 📱']
@@ -64,6 +64,7 @@ export default function CustomersPage() {
       deliveryCharge: Number(row['Delivery Charge'] || row['Shipping']) || 0,
       totalOrders: 1,
       totalSpent: Number(row['Price'] || row['Total']) || 0,
+      date: row['Date'] || new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
       status: uploadTargetSegment
     }))
 
@@ -166,6 +167,7 @@ export default function CustomersPage() {
                 <th className="px-6 py-4 font-medium">Address</th>
                 <th className="px-6 py-4 font-medium">Delivery</th>
                 <th className="px-6 py-4 font-medium">Amount</th>
+                <th className="px-6 py-4 font-medium">Date</th>
                 <th className="px-6 py-4 font-medium">Status</th>
                 <th className="px-6 py-4 font-medium text-right">Actions</th>
               </tr>
@@ -242,6 +244,15 @@ export default function CustomersPage() {
                         <input type="number" value={editForm.totalSpent} onChange={e => setEditForm({...editForm, totalSpent: Number(e.target.value)})} className="bg-zinc-800 text-white text-xs px-2 py-1 rounded border border-zinc-700 w-20" />
                       ) : (
                         customer.totalSpent ? `৳ ${customer.totalSpent.toLocaleString()}` : "-"
+                      )}
+                    </td>
+
+                    {/* DATE */}
+                    <td className="px-6 py-4 text-zinc-400">
+                      {editingId === customer.id ? (
+                        <input type="text" value={editForm.date} onChange={e => setEditForm({...editForm, date: e.target.value})} className="bg-zinc-800 text-white text-xs px-2 py-1 rounded border border-zinc-700 w-24" />
+                      ) : (
+                        customer.date || "-"
                       )}
                     </td>
 
@@ -323,11 +334,13 @@ export default function CustomersPage() {
               </div>
 
               {/* Drag & Drop Area */}
-              <div className="border-2 border-dashed border-zinc-700 rounded-xl p-8 flex flex-col items-center justify-center text-center hover:bg-zinc-900 transition-colors cursor-pointer group relative bg-zinc-950">
+              <div className="border-2 border-dashed border-zinc-700 rounded-xl p-8 flex flex-col items-center justify-center text-center hover:bg-zinc-900 transition-colors cursor-pointer group relative bg-zinc-950 overflow-hidden">
                 <input 
                   type="file" 
                   accept=".csv, .xlsx"
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  title="Upload CSV"
+                  className="absolute inset-0 w-full h-full opacity-0 z-50 cursor-pointer"
+                  style={{ color: "transparent" }}
                   onChange={handleFileUpload}
                 />
                 
