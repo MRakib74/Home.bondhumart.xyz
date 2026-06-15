@@ -232,27 +232,36 @@ export default function OrdersPage() {
 
   const getInvoiceStyles = () => `
     <style>
-      body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0 auto; padding: 0; background: #fff; color: #111; font-size: 14px; }
-      .invoice-page { width: 380px; margin: 0 auto; padding: 20px; box-sizing: border-box; page-break-after: always; }
-      .invoice-page:last-child { page-break-after: auto; }
-      .header { background: linear-gradient(135deg, #0ea5e9, #10b981); color: white; padding: 20px; border-radius: 12px 12px 0 0; display: flex; justify-content: space-between; align-items: center; }
-      .header h1 { margin: 0; font-size: 20px; }
-      .header p { margin: 4px 0 0; font-size: 12px; opacity: 0.9; }
-      .invoice-badge { background: rgba(255,255,255,0.2); padding: 4px 10px; border-radius: 20px; font-weight: bold; font-size: 12px; }
-      .details-box { display: flex; justify-content: space-between; border: 1px solid #e4e4e7; border-top: none; padding: 15px; background: #fafafa; }
+      @page { size: A4 portrait; margin: 10mm; }
+      body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background: #fff; color: #111; font-size: 11px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .a4-page { width: 190mm; height: 277mm; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: repeat(3, 1fr); gap: 10mm; box-sizing: border-box; page-break-after: always; }
+      .a4-page:last-child { page-break-after: auto; }
+      .invoice-page { width: 100%; height: 100%; box-sizing: border-box; border: 1px dashed #ccc; display: flex; flex-direction: column; overflow: hidden; background: #fff; }
+      
+      .header { background: linear-gradient(135deg, #0ea5e9, #10b981); color: white; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; }
+      .header h1 { margin: 0; font-size: 14px; font-weight: 800; }
+      .header p { margin: 2px 0 0; font-size: 9px; opacity: 0.9; }
+      .invoice-badge { background: rgba(255,255,255,0.2); padding: 2px 6px; border-radius: 10px; font-weight: bold; font-size: 9px; }
+      
+      .details-box { display: flex; justify-content: space-between; border-bottom: 1px solid #e4e4e7; padding: 8px 12px; background: #fafafa; }
       .box { width: 48%; }
-      .box-title { font-size: 11px; color: #71717a; text-transform: uppercase; font-weight: bold; margin-bottom: 5px; }
-      .box-text { font-size: 13px; margin: 2px 0; font-weight: 500; }
-      .table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-      .table th { border-bottom: 2px solid #e4e4e7; padding: 8px 4px; text-align: left; font-size: 12px; color: #71717a; }
-      .table td { border-bottom: 1px dashed #e4e4e7; padding: 10px 4px; font-size: 13px; font-weight: 500; }
-      .summary { margin-top: 15px; border-top: 2px solid #e4e4e7; padding-top: 10px; }
-      .summary-row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 13px; color: #52525b; }
-      .total-row { background: #18181b; color: white; padding: 12px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; font-weight: bold; font-size: 16px; margin-top: 10px; }
-      .courier-info { text-align: center; background: #f4f4f5; padding: 10px; border-radius: 6px; margin-top: 15px; font-size: 13px; font-weight: bold; border: 1px dashed #d4d4d8; }
-      @media print { 
-        body { width: 100%; } 
-        .invoice-page { width: 100%; max-width: 400px; padding: 10px; }
+      .box-title { font-size: 9px; color: #71717a; text-transform: uppercase; font-weight: bold; margin-bottom: 2px; }
+      .box-text { font-size: 10px; margin: 1px 0; font-weight: 600; }
+      
+      .table-container { padding: 0 12px; flex-grow: 1; }
+      .table { width: 100%; border-collapse: collapse; margin-top: 5px; }
+      .table th { border-bottom: 1px solid #e4e4e7; padding: 4px 2px; text-align: left; font-size: 9px; color: #71717a; text-transform: uppercase; }
+      .table td { border-bottom: 1px dashed #e4e4e7; padding: 4px 2px; font-size: 10px; font-weight: 600; }
+      
+      .summary { margin-top: auto; padding: 8px 12px; border-top: 1px solid #e4e4e7; }
+      .summary-row { display: flex; justify-content: space-between; padding: 2px 0; font-size: 10px; color: #52525b; }
+      .total-row { background: #18181b; color: white; padding: 6px 8px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; font-weight: bold; font-size: 12px; margin-top: 4px; }
+      
+      .courier-info { text-align: center; background: #f4f4f5; padding: 6px; margin: 8px 12px 12px; border-radius: 4px; font-size: 10px; font-weight: bold; border: 1px dashed #d4d4d8; }
+      
+      @media screen {
+        body { background: #52525b; padding: 20mm 0; }
+        .a4-page { background: #fff; padding: 10mm; box-shadow: 0 10px 25px rgba(0,0,0,0.3); margin-bottom: 20mm; }
       }
     </style>
   `;
@@ -289,24 +298,26 @@ export default function OrdersPage() {
           </div>
         </div>
 
-        <table class="table">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Product</th>
-              <th style="text-align: center;">Qty</th>
-              <th style="text-align: right;">Price</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>1</td>
-              <td>${o.product}</td>
-              <td style="text-align: center;">${o.quantity}</td>
-              <td style="text-align: right;">৳ ${subtotal}</td>
-            </tr>
-          </tbody>
-        </table>
+        <div class="table-container">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Product</th>
+                <th style="text-align: center;">Qty</th>
+                <th style="text-align: right;">Price</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>1</td>
+                <td>${o.product}</td>
+                <td style="text-align: center;">${o.quantity}</td>
+                <td style="text-align: right;">৳ ${subtotal}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
 
         <div class="summary">
           <div class="summary-row"><span>Subtotal</span><span>৳ ${subtotal}</span></div>
@@ -335,7 +346,9 @@ export default function OrdersPage() {
         ${getInvoiceStyles()}
       </head>
       <body>
-        ${generateInvoiceHTML(selectedOrder)}
+        <div class="a4-page">
+          ${generateInvoiceHTML(selectedOrder)}
+        </div>
       </body>
       </html>
     `;
@@ -355,6 +368,12 @@ export default function OrdersPage() {
 
     const selectedOrdersData = orders.filter(o => selectedIds.includes(o.id));
 
+    // Chunk orders into groups of 6 for each A4 page
+    const chunks = [];
+    for (let i = 0; i < selectedOrdersData.length; i += 6) {
+      chunks.push(selectedOrdersData.slice(i, i + 6));
+    }
+
     const html = `
       <!DOCTYPE html>
       <html>
@@ -363,7 +382,11 @@ export default function OrdersPage() {
         ${getInvoiceStyles()}
       </head>
       <body>
-        ${selectedOrdersData.map(o => generateInvoiceHTML(o)).join('')}
+        ${chunks.map(chunk => `
+          <div class="a4-page">
+            ${chunk.map(o => generateInvoiceHTML(o)).join('')}
+          </div>
+        `).join('')}
       </body>
       </html>
     `;
