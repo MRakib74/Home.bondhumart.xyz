@@ -54,6 +54,18 @@ export default function OrdersPage() {
   const [nDelivery, setNDelivery] = useState('80')
   const [isSending, setIsSending] = useState(false)
 
+  // Edit Modal State
+  const [selectedOrder, setSelectedOrder] = useState<OrderItem | null>(null)
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  const [eName, setEName] = useState('')
+  const [ePhone, setEPhone] = useState('')
+  const [eAddress, setEAddress] = useState('')
+  const [eDistrict, setEDistrict] = useState('')
+  const [eProduct, setEProduct] = useState('')
+  const [eQty, setEQty] = useState('1')
+  const [eAmount, setEAmount] = useState('')
+  const [eDelivery, setEDelivery] = useState('80')
+
   // Excel Import State
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
   const [uploadStep, setUploadStep] = useState(1)
@@ -171,6 +183,44 @@ export default function OrdersPage() {
   }
 
   // --- WORKFLOW ACTIONS ---
+  const openEditModal = (o: OrderItem) => {
+    setSelectedOrder(o)
+    setEName(o.customerName)
+    setEPhone(o.phone)
+    setEAddress(o.address)
+    setEDistrict(o.district)
+    setEProduct(o.product)
+    setEQty(String(o.quantity))
+    setEAmount(String(o.amount))
+    setEDelivery(String(o.deliveryCharge))
+    setIsEditModalOpen(true)
+  }
+
+  const saveEditedOrder = () => {
+    if (!selectedOrder) return
+    const updated = orders.map(o => o.id === selectedOrder.id ? {
+      ...o,
+      customerName: eName,
+      phone: formatPhoneForCourier(ePhone),
+      address: eAddress,
+      district: eDistrict,
+      product: eProduct,
+      quantity: Number(eQty),
+      amount: Number(eAmount),
+      deliveryCharge: Number(eDelivery)
+    } : o)
+    saveOrders(updated)
+    setIsEditModalOpen(false)
+  }
+
+  const deleteSingleOrder = (id: string) => {
+    if (confirm('আপনি কি এই অর্ডারটি ডিলিট করতে চান?')) {
+      const updated = orders.filter(o => o.id !== id)
+      saveOrders(updated)
+      setIsEditModalOpen(false)
+    }
+  }
+
   const handleDeleteSelected = () => {
     if (selectedIds.length === 0) return alert('অর্ডার সিলেক্ট করুন!')
     if (confirm(`আপনি কি নিশ্চিত যে ${selectedIds.length} টি অর্ডার ডিলিট করতে চান?`)) {
@@ -249,13 +299,15 @@ export default function OrdersPage() {
           if (selectedIds.includes(o.id)) {
             // Find tracking number from API results
             const apiResult = data.results.find((r: any) => r.orderId === o.id)
-            return {
-              ...o,
-              status: 'shipped' as const,
-              courierName: selectedCourier,
-              trackingNo: apiResult?.tracking_code || 'STDF-' + Date.now(),
-              shippedAt: new Date().toISOString(),
-              phone: formatPhoneForCourier(o.phone)
+            if (apiResult && apiResult.status === 'success') {
+              return {
+                ...o,
+                status: 'shipped' as const,
+                courierName: selectedCourier,
+                trackingNo: apiResult.tracking_code || 'STDF-' + Date.now(),
+                shippedAt: new Date().toISOString(),
+                phone: formatPhoneForCourier(o.phone)
+              }
             }
           }
           return o
@@ -370,8 +422,8 @@ export default function OrdersPage() {
             </thead>
             <tbody className="divide-y divide-zinc-800/50">
               {filtered.length > 0 ? filtered.map(o => (
-                <tr key={o.id} className="hover:bg-zinc-900/30 transition-colors group">
-                  <td className="px-4 py-3"><input type="checkbox" checked={selectedIds.includes(o.id)} onChange={() => toggleSelect(o.id)} className="accent-blue-500 w-4 h-4 cursor-pointer" /></td>
+                <tr key={o.id} onClick={() => openEditModal(o)} className="cursor-pointer hover:bg-zinc-900/30 transition-colors group">
+                  <td className="px-4 py-3" onClick={e => e.stopPropagation()}><input type="checkbox" checked={selectedIds.includes(o.id)} onChange={() => toggleSelect(o.id)} className="accent-blue-500 w-4 h-4 cursor-pointer" /></td>
                   <td className="px-4 py-3 text-zinc-300 font-mono text-xs whitespace-nowrap">{o.id.slice(0, 12)}</td>
                   <td className="px-4 py-3 min-w-[200px]">
                     <div className="text-zinc-200 font-medium group-hover:text-blue-400 transition-colors">{o.customerName}</div>
@@ -561,6 +613,58 @@ export default function OrdersPage() {
           </div>
         </div>
       )}
+      {/* Edit Order Modal */}
+      {isEditModalOpen && selectedOrder && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="bg-[#111] border border-zinc-800 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="p-5 border-b border-zinc-800 flex justify-between items-center">
+              <h3 className="text-lg font-bold text-white flex items-center gap-2">Order Details & Edit</h3>
+              <button onClick={() => setIsEditModalOpen(false)} className="text-zinc-500 hover:text-white"><X className="h-5 w-5" /></button>
+            </div>
+            <div className="p-6 space-y-4 overflow-y-auto custom-scrollbar flex-1">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-xs text-zinc-500 font-mono">ID: {selectedOrder.id}</span>
+                <span className={`text-xs px-2.5 py-1 rounded-full ${selectedOrder.status === 'new' ? 'bg-amber-500/10 text-amber-400' : selectedOrder.status === 'confirmed' ? 'bg-blue-500/10 text-blue-400' : 'bg-emerald-500/10 text-emerald-400'}`}>
+                  {selectedOrder.status.toUpperCase()}
+                </span>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div><label className="block text-xs text-zinc-400 mb-1">Customer Name *</label><input value={eName} onChange={e => setEName(e.target.value)} className="w-full bg-zinc-900 border border-zinc-800 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500" /></div>
+                <div><label className="block text-xs text-zinc-400 mb-1">Phone *</label><input value={ePhone} onChange={e => setEPhone(e.target.value)} className="w-full bg-zinc-900 border border-zinc-800 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500" /></div>
+              </div>
+              <div><label className="block text-xs text-zinc-400 mb-1">Address</label><input value={eAddress} onChange={e => setEAddress(e.target.value)} className="w-full bg-zinc-900 border border-zinc-800 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500" /></div>
+              <div className="grid grid-cols-2 gap-4">
+                <div><label className="block text-xs text-zinc-400 mb-1">District</label><input value={eDistrict} onChange={e => setEDistrict(e.target.value)} className="w-full bg-zinc-900 border border-zinc-800 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500" /></div>
+                <div><label className="block text-xs text-zinc-400 mb-1">Product *</label><input value={eProduct} onChange={e => setEProduct(e.target.value)} className="w-full bg-zinc-900 border border-zinc-800 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500" /></div>
+              </div>
+              <div className="grid grid-cols-3 gap-4">
+                <div><label className="block text-xs text-zinc-400 mb-1">Qty</label><input type="number" value={eQty} onChange={e => setEQty(e.target.value)} className="w-full bg-zinc-900 border border-zinc-800 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500" /></div>
+                <div><label className="block text-xs text-zinc-400 mb-1">Amount (৳) *</label><input type="number" value={eAmount} onChange={e => setEAmount(e.target.value)} className="w-full bg-zinc-900 border border-zinc-800 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500" /></div>
+                <div><label className="block text-xs text-zinc-400 mb-1">Delivery (৳)</label><input type="number" value={eDelivery} onChange={e => setEDelivery(e.target.value)} className="w-full bg-zinc-900 border border-zinc-800 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500" /></div>
+              </div>
+
+              {selectedOrder.status === 'shipped' && (
+                <div className="bg-emerald-500/5 border border-emerald-500/20 p-3 rounded-lg mt-4">
+                  <p className="text-xs text-emerald-400 font-medium mb-1">Courier Details</p>
+                  <p className="text-sm text-zinc-300 capitalize">Courier: {selectedOrder.courierName}</p>
+                  <p className="text-sm text-zinc-300">Tracking No: <span className="font-mono text-blue-400">{selectedOrder.trackingNo}</span></p>
+                </div>
+              )}
+            </div>
+            <div className="p-5 border-t border-zinc-800 flex justify-between">
+              <button onClick={() => deleteSingleOrder(selectedOrder.id)} className="px-4 py-2 text-sm text-red-500 hover:bg-red-500/10 rounded-lg flex items-center gap-2">
+                <Trash2 className="h-4 w-4" /> Delete Order
+              </button>
+              <div className="flex gap-2">
+                <button onClick={() => setIsEditModalOpen(false)} className="px-4 py-2 text-sm text-zinc-400 hover:text-white">Cancel</button>
+                <button onClick={saveEditedOrder} className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2.5 rounded-xl text-sm font-medium">Save Changes</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   )
 }
