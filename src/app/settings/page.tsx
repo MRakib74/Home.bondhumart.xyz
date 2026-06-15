@@ -18,6 +18,16 @@ export default function SettingsPage() {
   const [waApiKey, setWaApiKey] = useState('')
   const [waBaseUrl, setWaBaseUrl] = useState('')
 
+  // SMS State
+  const [smsUrl, setSmsUrl] = useState('')
+  const [smsKey, setSmsKey] = useState('')
+
+  // Email State
+  const [smtpHost, setSmtpHost] = useState('smtp.gmail.com')
+  const [smtpPort, setSmtpPort] = useState('465')
+  const [smtpEmail, setSmtpEmail] = useState('')
+  const [smtpPass, setSmtpPass] = useState('')
+
   useEffect(() => {
     try {
       const data = localStorage.getItem('bondhu_chat_config')
@@ -28,13 +38,20 @@ export default function SettingsPage() {
         setWaInstance(parsed.waInstance || '')
         setWaApiKey(parsed.waApiKey || '')
         setWaBaseUrl(parsed.waBaseUrl || '')
+        setSmsUrl(parsed.smsUrl || '')
+        setSmsKey(parsed.smsKey || '')
+        setSmtpHost(parsed.smtpHost || 'smtp.gmail.com')
+        setSmtpPort(parsed.smtpPort || '465')
+        setSmtpEmail(parsed.smtpEmail || '')
+        setSmtpPass(parsed.smtpPass || '')
       }
     } catch(e) {}
   }, [])
 
   const handleSave = () => {
     localStorage.setItem('bondhu_chat_config', JSON.stringify({
-      fbPageId, fbAccessToken, waInstance, waApiKey, waBaseUrl
+      fbPageId, fbAccessToken, waInstance, waApiKey, waBaseUrl,
+      smsUrl, smsKey, smtpHost, smtpPort, smtpEmail, smtpPass
     }))
     setSaved(true)
     setTimeout(() => setSaved(false), 3000)
@@ -60,18 +77,30 @@ export default function SettingsPage() {
         </button>
       </div>
 
-      <div className="flex gap-4 border-b border-zinc-800 pb-2">
+      <div className="flex gap-4 border-b border-zinc-800 pb-2 overflow-x-auto custom-scrollbar">
         <button 
           onClick={() => setActiveTab('messenger')}
-          className={`px-4 py-2 text-sm font-bold rounded-lg transition-colors flex items-center gap-2 ${activeTab === 'messenger' ? 'bg-[#0084FF]/20 text-[#0084FF]' : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900'}`}
+          className={`px-4 py-2 text-sm font-bold rounded-lg transition-colors flex items-center gap-2 whitespace-nowrap ${activeTab === 'messenger' ? 'bg-[#0084FF]/20 text-[#0084FF]' : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900'}`}
         >
           <MessageSquare className="h-4 w-4" /> Facebook Messenger
         </button>
         <button 
           onClick={() => setActiveTab('whatsapp')}
-          className={`px-4 py-2 text-sm font-bold rounded-lg transition-colors flex items-center gap-2 ${activeTab === 'whatsapp' ? 'bg-[#25D366]/20 text-[#25D366]' : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900'}`}
+          className={`px-4 py-2 text-sm font-bold rounded-lg transition-colors flex items-center gap-2 whitespace-nowrap ${activeTab === 'whatsapp' ? 'bg-[#25D366]/20 text-[#25D366]' : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900'}`}
         >
           <Phone className="h-4 w-4" /> WhatsApp (Evolution API)
+        </button>
+        <button 
+          onClick={() => setActiveTab('sms')}
+          className={`px-4 py-2 text-sm font-bold rounded-lg transition-colors flex items-center gap-2 whitespace-nowrap ${activeTab === 'sms' ? 'bg-blue-500/20 text-blue-400' : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900'}`}
+        >
+          <MessageSquare className="h-4 w-4" /> Custom SMS Gateway
+        </button>
+        <button 
+          onClick={() => setActiveTab('email')}
+          className={`px-4 py-2 text-sm font-bold rounded-lg transition-colors flex items-center gap-2 whitespace-nowrap ${activeTab === 'email' ? 'bg-purple-500/20 text-purple-400' : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900'}`}
+        >
+          <MessageSquare className="h-4 w-4" /> Email (SMTP/Gmail)
         </button>
       </div>
 
@@ -182,6 +211,100 @@ export default function SettingsPage() {
                     onChange={e => setWaApiKey(e.target.value)} 
                     placeholder="Enter your Evolution API Key..." 
                     className="w-full bg-zinc-900 border border-zinc-800 text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#25D366]" 
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'sms' && (
+          <div className="bg-zinc-950 border border-zinc-800 rounded-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="bg-gradient-to-r from-blue-500/20 to-transparent p-6 border-b border-zinc-800">
+              <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                <MessageSquare className="h-6 w-6 text-blue-400" /> Custom SMS Gateway
+              </h3>
+              <p className="text-sm text-zinc-400 mt-2 max-w-2xl">
+                Configure your custom SMS gateway provider (e.g. BulkSMS, SMSNen) to send SMS Broadcasts.
+              </p>
+            </div>
+            
+            <div className="p-6 space-y-6">
+              <div>
+                <label className="block text-xs font-medium text-zinc-400 mb-1">API Endpoint URL</label>
+                <input 
+                  type="text" 
+                  value={smsUrl} 
+                  onChange={e => setSmsUrl(e.target.value)} 
+                  placeholder="https://sms-provider.com/api/send" 
+                  className="w-full bg-zinc-900 border border-zinc-800 text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500" 
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-zinc-400 mb-1">API Key / Token</label>
+                <input 
+                  type="password" 
+                  value={smsKey} 
+                  onChange={e => setSmsKey(e.target.value)} 
+                  placeholder="Enter your SMS API Key..." 
+                  className="w-full bg-zinc-900 border border-zinc-800 text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500" 
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'email' && (
+          <div className="bg-zinc-950 border border-zinc-800 rounded-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="bg-gradient-to-r from-purple-500/20 to-transparent p-6 border-b border-zinc-800">
+              <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                <MessageSquare className="h-6 w-6 text-purple-400" /> Email SMTP Configuration
+              </h3>
+              <p className="text-sm text-zinc-400 mt-2 max-w-2xl">
+                Connect your Gmail or Webmail SMTP server to send mass promotional emails to your customers. (For Gmail, use App Password).
+              </p>
+            </div>
+            
+            <div className="p-6 space-y-6">
+              <div>
+                <label className="block text-xs font-medium text-zinc-400 mb-1">SMTP Host</label>
+                <input 
+                  type="text" 
+                  value={smtpHost} 
+                  onChange={e => setSmtpHost(e.target.value)} 
+                  placeholder="smtp.gmail.com" 
+                  className="w-full bg-zinc-900 border border-zinc-800 text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-purple-500" 
+                />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="md:col-span-2">
+                  <label className="block text-xs font-medium text-zinc-400 mb-1">Email Address</label>
+                  <input 
+                    type="email" 
+                    value={smtpEmail} 
+                    onChange={e => setSmtpEmail(e.target.value)} 
+                    placeholder="yourname@gmail.com" 
+                    className="w-full bg-zinc-900 border border-zinc-800 text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-purple-500" 
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-zinc-400 mb-1">Port</label>
+                  <input 
+                    type="text" 
+                    value={smtpPort} 
+                    onChange={e => setSmtpPort(e.target.value)} 
+                    placeholder="465" 
+                    className="w-full bg-zinc-900 border border-zinc-800 text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-purple-500" 
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-zinc-400 mb-1">App Password / SMTP Password</label>
+                  <input 
+                    type="password" 
+                    value={smtpPass} 
+                    onChange={e => setSmtpPass(e.target.value)} 
+                    placeholder="Enter App Password..." 
+                    className="w-full bg-zinc-900 border border-zinc-800 text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-purple-500" 
                   />
                 </div>
               </div>
