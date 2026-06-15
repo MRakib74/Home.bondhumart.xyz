@@ -300,7 +300,7 @@ export default function CustomersPage() {
   }
 
   return (
-    <div className="p-4 md:p-6 space-y-4 bg-black h-screen overflow-hidden flex flex-col text-zinc-100">
+    <div className="p-3 md:p-6 space-y-4 bg-black h-[100dvh] overflow-hidden flex flex-col text-zinc-100">
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shrink-0">
         <div>
@@ -500,9 +500,9 @@ export default function CustomersPage() {
 
       {/* ====== UPLOAD MODAL ====== */}
       {isUploadModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-zinc-950 border border-zinc-800 rounded-2xl w-full max-w-xl shadow-2xl overflow-hidden">
-            <div className="p-5 border-b border-zinc-800 flex items-center justify-between">
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
+          <div className="bg-zinc-950 border border-zinc-800 rounded-t-2xl sm:rounded-2xl w-full max-w-xl shadow-2xl overflow-hidden flex flex-col max-h-[90dvh] sm:max-h-[85vh] animate-in slide-in-from-bottom-8 sm:zoom-in-95 duration-200">
+            <div className="p-4 sm:p-5 border-b border-zinc-800 flex items-center justify-between shrink-0">
               <div>
                 <h3 className="text-lg font-bold text-white">Import Data (Excel/CSV)</h3>
                 <p className="text-sm text-zinc-400 mt-1">
@@ -514,7 +514,7 @@ export default function CustomersPage() {
               </button>
             </div>
             
-            <div className="p-5 space-y-5 max-h-[70vh] overflow-y-auto custom-scrollbar">
+            <div className="p-4 sm:p-5 space-y-5 overflow-y-auto flex-1 custom-scrollbar">
               {/* Target Segment */}
               <div>
                 <label className="block text-sm font-medium mb-2 text-zinc-200">Select Target Segment</label>
@@ -639,11 +639,11 @@ export default function CustomersPage() {
 
       {/* ====== CUSTOMER DETAILS MODAL ====== */}
       {selectedCustomer && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-zinc-950 border border-zinc-800 rounded-2xl w-full max-w-3xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
+          <div className="bg-zinc-950 border-t sm:border border-zinc-800 rounded-t-2xl sm:rounded-2xl w-full max-w-3xl shadow-2xl flex flex-col h-[90dvh] sm:h-auto sm:max-h-[90vh] overflow-hidden animate-in slide-in-from-bottom-8 sm:zoom-in-95 duration-200">
             
             {/* Header */}
-            <div className="p-5 border-b border-zinc-800 flex items-start justify-between bg-zinc-900/30 shrink-0">
+            <div className="p-4 sm:p-5 border-b border-zinc-800 flex items-start justify-between bg-zinc-900/30 shrink-0">
               <div className="flex gap-4 items-center">
                 <div className="h-14 w-14 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-full flex items-center justify-center text-xl font-bold text-white shadow-lg shrink-0">
                   {(selectedCustomer.name || "?").charAt(0)}
@@ -682,7 +682,7 @@ export default function CustomersPage() {
             </div>
 
             {/* Content — scrollable */}
-            <div className="p-5 overflow-y-auto flex-1 grid grid-cols-1 md:grid-cols-2 gap-6 custom-scrollbar">
+            <div className="p-4 sm:p-5 overflow-y-auto flex-1 grid grid-cols-1 md:grid-cols-2 gap-6 custom-scrollbar">
               
               {/* LEFT: Contact */}
               <div className="space-y-5">
