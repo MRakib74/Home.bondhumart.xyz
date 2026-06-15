@@ -32,8 +32,12 @@ fi
 echo "📦 Dependencies ইনস্টল করা হচ্ছে..."
 npm install --silent
 
-echo "🗄️  Prisma Database Generate..."
+echo "🗄️  Prisma Database Generate & Migrate..."
 npx prisma generate
+npx prisma db push --accept-data-loss
+
+echo "🧹 Clearing Next.js Cache..."
+rm -rf .next
 
 echo "🏗️  Next.js Build করা হচ্ছে..."
 npm run build
