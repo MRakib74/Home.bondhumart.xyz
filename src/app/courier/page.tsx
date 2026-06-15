@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Truck, Save, CheckCircle2, AlertTriangle, Settings, Shield } from "lucide-react"
+import { Truck, Save, CheckCircle2, AlertTriangle, Settings, Shield, Key, X } from "lucide-react"
 
 interface CourierConfig {
   id: string
@@ -26,6 +26,14 @@ export default function CourierPage() {
   const [defaultCourier, setDefaultCourier] = useState('steadfast')
   const [saved, setSaved] = useState(false)
 
+  // Pathao Token Generator State
+  const [showPathaoTokenModal, setShowPathaoTokenModal] = useState(false)
+  const [pClientId, setPClientId] = useState('')
+  const [pClientSecret, setPClientSecret] = useState('')
+  const [pEmail, setPEmail] = useState('')
+  const [pPassword, setPPassword] = useState('')
+  const [isGenerating, setIsGenerating] = useState(false)
+
   useEffect(() => {
     try {
       const data = localStorage.getItem('bondhu_courier_config')
@@ -48,6 +56,37 @@ export default function CourierPage() {
   }
 
   const activeCount = couriers.filter(c => c.isActive).length
+
+  const handleGeneratePathaoToken = async () => {
+    if (!pClientId || !pClientSecret || !pEmail || !pPassword) {
+      return alert('সবগুলো ফিল্ড পূরণ করুন!')
+    }
+    setIsGenerating(true)
+    try {
+      const res = await fetch('/api/courier/pathao/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          clientId: pClientId,
+          clientSecret: pClientSecret,
+          email: pEmail,
+          password: pPassword
+        })
+      })
+      const data = await res.json()
+      if (data.success) {
+        updateCourier('pathao', 'apiKey', data.access_token)
+        setShowPathaoTokenModal(false)
+        alert('✅ Pathao Access Token সফলভাবে জেনারেট হয়েছে এবং API Key বক্সে বসে গেছে! এখন Save Settings এ ক্লিক করুন।')
+      } else {
+        alert('❌ Error: ' + data.error)
+      }
+    } catch (e) {
+      alert('Network error occurred.')
+    } finally {
+      setIsGenerating(false)
+    }
+  }
 
   return (
     <div className="p-4 md:p-8 space-y-6 max-w-5xl mx-auto text-zinc-100 bg-black min-h-screen">
@@ -103,12 +142,21 @@ export default function CourierPage() {
             {c.isActive && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 pt-4 border-t border-zinc-800">
                 <div>
-                  <label className="block text-xs font-medium text-zinc-400 mb-1">API Key</label>
+                  <label className="block text-xs font-medium text-zinc-400 mb-1">
+                    {c.id === 'pathao' ? 'API Key (Access Token)' : 'API Key'}
+                  </label>
                   <input type="password" value={c.apiKey} onChange={e => updateCourier(c.id, 'apiKey', e.target.value)} placeholder="Enter API Key..." className="w-full bg-zinc-900 border border-zinc-800 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-500" />
+                  {c.id === 'pathao' && (
+                    <button onClick={() => setShowPathaoTokenModal(true)} className="mt-2 text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1 font-medium transition-colors">
+                      <Key className="h-3 w-3" /> Auto Generate Token
+                    </button>
+                  )}
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-zinc-400 mb-1">Secret Key</label>
-                  <input type="password" value={c.secretKey} onChange={e => updateCourier(c.id, 'secretKey', e.target.value)} placeholder="Enter Secret Key..." className="w-full bg-zinc-900 border border-zinc-800 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-500" />
+                  <label className="block text-xs font-medium text-zinc-400 mb-1">
+                    {c.id === 'pathao' ? 'Secret Key (Store ID)' : 'Secret Key'}
+                  </label>
+                  <input type="password" value={c.secretKey} onChange={e => updateCourier(c.id, 'secretKey', e.target.value)} placeholder={c.id === 'pathao' ? 'Enter Store ID (Optional)' : 'Enter Secret Key...'} className="w-full bg-zinc-900 border border-zinc-800 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-500" />
                 </div>
                 {c.baseUrl && (
                   <div className="md:col-span-2">
@@ -130,6 +178,47 @@ export default function CourierPage() {
           <p className="text-xs text-zinc-400 mt-1">API Key সঠিকভাবে বসানোর পরই কুরিয়ারে অটো এন্ট্রি কাজ করবে। ভুল Key দিলে অর্ডার কুরিয়ারে যাবে না।</p>
         </div>
       </div>
+      {/* Pathao Token Generator Modal */}
+      {showPathaoTokenModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-zinc-950 border border-zinc-800 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between p-5 border-b border-zinc-800">
+              <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                <Key className="h-5 w-5 text-blue-500" /> Generate Pathao Token
+              </h3>
+              <button onClick={() => setShowPathaoTokenModal(false)} className="text-zinc-500 hover:text-zinc-300 transition-colors">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="p-5 space-y-4">
+              <p className="text-sm text-zinc-400 mb-4">আপনার Pathao Merchant Dashboard থেকে Client ID এবং Secret নিয়ে আসুন এবং আপনার ইমেইল-পাসওয়ার্ড দিন। আমরা অটোমেটিক টোকেন জেনারেট করে দিবো।</p>
+              
+              <div>
+                <label className="block text-xs font-medium text-zinc-400 mb-1">Client ID</label>
+                <input type="text" value={pClientId} onChange={e => setPClientId(e.target.value)} placeholder="Enter Client ID" className="w-full bg-zinc-900 border border-zinc-800 text-white rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-blue-500" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-zinc-400 mb-1">Client Secret</label>
+                <input type="password" value={pClientSecret} onChange={e => setPClientSecret(e.target.value)} placeholder="Enter Client Secret" className="w-full bg-zinc-900 border border-zinc-800 text-white rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-blue-500" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-zinc-400 mb-1">Email (Pathao Login)</label>
+                <input type="email" value={pEmail} onChange={e => setPEmail(e.target.value)} placeholder="merchant@example.com" className="w-full bg-zinc-900 border border-zinc-800 text-white rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-blue-500" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-zinc-400 mb-1">Password (Pathao Login)</label>
+                <input type="password" value={pPassword} onChange={e => setPPassword(e.target.value)} placeholder="Enter your pathao password" className="w-full bg-zinc-900 border border-zinc-800 text-white rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-blue-500" />
+              </div>
+            </div>
+            <div className="p-5 border-t border-zinc-800 flex justify-end gap-3 bg-zinc-900/30">
+              <button onClick={() => setShowPathaoTokenModal(false)} className="px-4 py-2 text-sm text-zinc-400 hover:text-white transition-colors">Cancel</button>
+              <button onClick={handleGeneratePathaoToken} disabled={isGenerating} className="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 rounded-xl text-sm font-medium transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
+                {isGenerating ? 'Generating...' : 'Generate & Save Token'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
