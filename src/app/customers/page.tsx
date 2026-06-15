@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Search, Download, Upload, Filter, X, FileSpreadsheet, CheckCircle2, Edit2, Save, MessageCircle, User, MapPin, Package, ShoppingBag, Calendar, ArrowRight } from "lucide-react"
+import { Search, Download, Upload, Filter, X, FileSpreadsheet, CheckCircle2, Edit2, Save, MessageCircle, User, MapPin, Package, ShoppingBag, Calendar, ArrowRight, Trash2 } from "lucide-react"
 import * as XLSX from "xlsx"
 
 // Default mock data
@@ -14,11 +14,45 @@ const defaultCustomers = [
 
 const TABS = ['All', 'Pending 🟡', 'Confirmed 🔵', 'Delivered 🟢', 'Returned 🟣', 'Hold 🟠', 'Cancelled 🔴', 'Raw Leads 📱']
 
+// Helper to auto-extract district & thana from raw address
+const extractAddressInfo = (fullAddress: string) => {
+  if (!fullAddress) return { district: "", thana: "" };
+  const lowerAddr = fullAddress.toLowerCase();
+  
+  // Basic BD Districts list for auto-detection
+  const districts = ["dhaka", "chattogram", "sylhet", "rajshahi", "khulna", "barishal", "rangpur", "mymensingh", "cumilla", "gazipur", "narayanganj", "bogra", "noakhali", "faridpur", "tangail", "brahmanbaria", "chandpur", "cox's bazar"];
+  
+  let foundDistrict = "";
+  for (const d of districts) {
+    if (lowerAddr.includes(d)) {
+      foundDistrict = d.charAt(0).toUpperCase() + d.slice(1);
+      break;
+    }
+  }
+
+  // Basic Thana fallback detection (add more as needed)
+  let foundThana = "";
+  if (lowerAddr.includes("mirpur")) foundThana = "Mirpur";
+  else if (lowerAddr.includes("uttara")) foundThana = "Uttara";
+  else if (lowerAddr.includes("dhanmondi")) foundThana = "Dhanmondi";
+  else if (lowerAddr.includes("gulshan")) foundThana = "Gulshan";
+  else if (lowerAddr.includes("savar")) foundThana = "Savar";
+  else if (lowerAddr.includes("panchlaish")) foundThana = "Panchlaish";
+  else if (lowerAddr.includes("zindabazar")) foundThana = "Zindabazar";
+  else if (lowerAddr.includes("badda")) foundThana = "Badda";
+  else if (lowerAddr.includes("banani")) foundThana = "Banani";
+  else if (lowerAddr.includes("motijheel")) foundThana = "Motijheel";
+  else if (lowerAddr.includes("jatrabari")) foundThana = "Jatrabari";
+  
+  return { district: foundDistrict, thana: foundThana };
+}
+
 export default function CustomersPage() {
   const [activeTab, setActiveTab] = useState('All')
   const [customers, setCustomers] = useState(defaultCustomers)
   const [searchQuery, setSearchQuery] = useState('')
   const [isLoaded, setIsLoaded] = useState(false)
+  const [selectedIds, setSelectedIds] = useState<number[]>([])
   
   // ====== localStorage: Load on mount ======
   useEffect(() => {
@@ -101,22 +135,27 @@ export default function CustomersPage() {
       return
     }
     
-    const newCustomers = parsedData.map((row, index) => ({
-      id: Date.now() + index,
-      name: colMap.name ? String(row[colMap.name] || "") : "Unknown",
-      phone: colMap.phone ? String(row[colMap.phone] || "") : "No Phone",
-      email: "",
-      district: "",
-      thana: "",
-      address: colMap.address ? String(row[colMap.address] || "") : "",
-      product: colMap.product ? String(row[colMap.product] || "") : "",
-      orderId: colMap.orderId ? String(row[colMap.orderId] || "") : `NEW-${(Date.now() + index).toString().slice(-4)}`,
-      deliveryCharge: colMap.deliveryCharge ? Number(row[colMap.deliveryCharge]) || 0 : 0,
-      totalOrders: 1,
-      totalSpent: colMap.totalSpent ? Number(row[colMap.totalSpent]) || 0 : 0,
-      date: colMap.date ? String(row[colMap.date] || "") : new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
-      status: uploadTargetSegment
-    }))
+    const newCustomers = parsedData.map((row, index) => {
+      const rawAddress = colMap.address ? String(row[colMap.address] || "") : "";
+      const { district, thana } = extractAddressInfo(rawAddress);
+
+      return {
+        id: Date.now() + index,
+        name: colMap.name ? String(row[colMap.name] || "") : "Unknown",
+        phone: colMap.phone ? String(row[colMap.phone] || "") : "No Phone",
+        email: "",
+        district: district,
+        thana: thana,
+        address: rawAddress,
+        product: colMap.product ? String(row[colMap.product] || "") : "",
+        orderId: colMap.orderId ? String(row[colMap.orderId] || "") : `NEW-${(Date.now() + index).toString().slice(-4)}`,
+        deliveryCharge: colMap.deliveryCharge ? Number(row[colMap.deliveryCharge]) || 0 : 0,
+        totalOrders: 1,
+        totalSpent: colMap.totalSpent ? Number(row[colMap.totalSpent]) || 0 : 0,
+        date: colMap.date ? String(row[colMap.date] || "") : new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
+        status: uploadTargetSegment
+      }
+    })
 
     setCustomers(prev => [...newCustomers, ...prev])
     resetUploadState()
@@ -131,6 +170,13 @@ export default function CustomersPage() {
     setFileHeaders([])
     setUploadTargetSegment('')
     setColMap({ name: "", phone: "", address: "", product: "", orderId: "", deliveryCharge: "", totalSpent: "", date: "" })
+  }
+
+  const handleDeleteSelected = () => {
+    if (confirm(`আপনি কি নিশ্চিত যে ${selectedIds.length} জন কাস্টমারকে ডিলিট করতে চান?`)) {
+      setCustomers(prev => prev.filter(c => !selectedIds.includes(c.id)))
+      setSelectedIds([])
+    }
   }
 
   const openCustomerDetails = (customer: any) => {
@@ -172,7 +218,16 @@ export default function CustomersPage() {
           <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-white">Customers & CRM</h2>
           <p className="text-zinc-400 mt-1 text-sm">Manage all your leads, active customers, and AI segmentations.</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {selectedIds.length > 0 && (
+            <button 
+              onClick={handleDeleteSelected}
+              className="flex items-center gap-2 bg-rose-600/10 text-rose-500 border border-rose-500/20 px-3 py-2 rounded-lg font-medium hover:bg-rose-600/20 transition-colors text-sm"
+            >
+              <Trash2 className="h-4 w-4" />
+              Delete ({selectedIds.length})
+            </button>
+          )}
           <button 
             onClick={() => setIsUploadModalOpen(true)}
             className="flex items-center gap-2 bg-zinc-800 text-white px-3 py-2 rounded-lg font-medium hover:bg-zinc-700 transition-colors border border-zinc-700 text-sm"
@@ -257,9 +312,20 @@ export default function CustomersPage() {
 
         {/* Table — scrollable */}
         <div className="overflow-auto flex-1 bg-zinc-950">
-          <table className="w-full text-sm text-left min-w-[700px]">
+          <table className="w-full text-sm text-left min-w-[800px]">
             <thead className="text-xs uppercase bg-zinc-900 border-b border-zinc-800 text-zinc-400 whitespace-nowrap sticky top-0 z-10">
               <tr>
+                <th className="px-4 py-3 font-medium w-12">
+                  <input 
+                    type="checkbox" 
+                    checked={selectedIds.length === filteredCustomers.length && filteredCustomers.length > 0}
+                    onChange={(e) => {
+                      if (e.target.checked) setSelectedIds(filteredCustomers.map(c => c.id))
+                      else setSelectedIds([])
+                    }}
+                    className="rounded bg-zinc-900 border-zinc-700 text-blue-500 focus:ring-blue-500"
+                  />
+                </th>
                 {visibleCols.customerInfo && <th className="px-4 py-3 font-medium">Customer Info</th>}
                 {visibleCols.orderId && <th className="px-4 py-3 font-medium">Order ID</th>}
                 {visibleCols.product && <th className="px-4 py-3 font-medium">Product</th>}
@@ -282,8 +348,19 @@ export default function CustomersPage() {
                   <tr 
                     key={customer.id} 
                     onClick={() => openCustomerDetails(customer)}
-                    className="hover:bg-zinc-900/80 transition-colors group whitespace-nowrap cursor-pointer"
+                    className={`transition-colors group whitespace-nowrap cursor-pointer ${selectedIds.includes(customer.id) ? 'bg-blue-900/20' : 'hover:bg-zinc-900/80'}`}
                   >
+                    <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                      <input 
+                        type="checkbox" 
+                        checked={selectedIds.includes(customer.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) setSelectedIds([...selectedIds, customer.id])
+                          else setSelectedIds(selectedIds.filter(id => id !== customer.id))
+                        }}
+                        className="rounded bg-zinc-900 border-zinc-700 text-blue-500 focus:ring-blue-500"
+                      />
+                    </td>
                     {visibleCols.customerInfo && (
                       <td className="px-4 py-3">
                         <div className="font-medium text-zinc-100 group-hover:text-blue-400 transition-colors">{customer.name || "Unknown"}</div>
@@ -399,7 +476,7 @@ export default function CustomersPage() {
                 /* STEP 2: COLUMN MAPPING */
                 <div className="space-y-3">
                   <div className="bg-blue-900/20 text-blue-400 p-3 rounded-lg text-sm border border-blue-900/50">
-                    Map your file columns to BondhuOS fields. Leave blank if your file doesn&apos;t have a column.
+                    <span className="font-bold">Note:</span> The dropdowns only show columns that exist in your uploaded Excel file. If a column is missing in your file, leave it as "-- Ignore this field --".
                   </div>
                   
                   {[
@@ -568,7 +645,7 @@ export default function CustomersPage() {
                       </>
                     ) : (
                       <>
-                        <div className="font-medium text-zinc-200">{selectedCustomer.district && selectedCustomer.thana ? `${selectedCustomer.district}, ${selectedCustomer.thana}` : "N/A"}</div>
+                        <div className="font-medium text-zinc-200">{selectedCustomer.district || selectedCustomer.thana ? `${selectedCustomer.district || ''}, ${selectedCustomer.thana || ''}`.replace(/^,\s*/, '').replace(/,\s*$/, '') : "N/A"}</div>
                         <div className="text-sm text-zinc-400">{selectedCustomer.address || "No address"}</div>
                       </>
                     )}
