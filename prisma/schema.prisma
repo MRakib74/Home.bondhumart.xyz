@@ -19,8 +19,12 @@ model Customer {
   phone          String    @unique
   email          String?
   district       String?
+  thana          String?   // Automatically parsed from address
   city           String?
   address        String?
+  
+  // Dynamic columns
+  customData     Json?     // Stores dynamically created columns like Email, specific custom text, etc.
   
   // AI Generated labels & Stats
   label          String?   // e.g., "High Value", "Risky"
@@ -64,6 +68,10 @@ model Order {
   
   quantity         Int       @default(1)
   amount           Float
+  deliveryCharge   Float     @default(0.0)
+  
+  // Dynamic columns for specific orders
+  customData       Json?
   status           String    @default("Pending") // Pending, Delivered, Cancelled, Returned
   cancelledReason  String?
   

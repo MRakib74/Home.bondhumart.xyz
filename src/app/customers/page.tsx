@@ -29,19 +29,37 @@ export default function CustomersPage() {
 
       <div className="glass-card rounded-2xl overflow-hidden">
         {/* Toolbar */}
-        <div className="p-4 border-b border-border flex items-center justify-between gap-4 bg-secondary/20">
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-            <input 
-              type="text" 
-              placeholder="Search by name or phone..." 
-              className="w-full bg-background border border-border rounded-xl pl-10 pr-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
-            />
+        <div className="p-4 border-b border-border flex flex-col gap-4 bg-secondary/20">
+          <div className="flex items-center justify-between gap-4">
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              <input 
+                type="text" 
+                placeholder="Search by name, phone, or order ID..." 
+                className="w-full bg-background border border-border rounded-xl pl-10 pr-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+              />
+            </div>
+            <button className="flex items-center gap-2 px-4 py-2 bg-background border border-border rounded-xl hover:bg-secondary transition-colors text-sm font-medium">
+              <Filter className="h-4 w-4" />
+              Filter Custom Columns
+            </button>
           </div>
-          <button className="flex items-center gap-2 px-4 py-2 bg-background border border-border rounded-xl hover:bg-secondary transition-colors text-sm font-medium">
-            <Filter className="h-4 w-4" />
-            Filter Segments
-          </button>
+
+          {/* Dynamic Status Tabs */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide">
+            {['All', 'Pending 🟡', 'Confirmed 🔵', 'Delivered 🟢', 'Returned 🟣', 'Hold 🟠', 'Cancelled 🔴', 'Raw Leads 📱'].map(tab => (
+              <button 
+                key={tab}
+                className={`whitespace-nowrap px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  tab === 'All' 
+                    ? 'bg-primary text-primary-foreground' 
+                    : 'bg-background border border-border hover:bg-secondary/80 text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Table */}
