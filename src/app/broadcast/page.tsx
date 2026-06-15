@@ -623,66 +623,9 @@ export default function BroadcastPage() {
 
         {/* Right Column: Settings & Send */}
         <div className="space-y-6">
-          <div className="bg-zinc-950 border border-zinc-800 rounded-2xl p-6">
-            <h3 className="text-lg font-bold text-white flex items-center gap-2 mb-4">
-              <Settings className="h-5 w-5 text-zinc-400" /> API Configuration
-            </h3>
-            
-            {activeTab === 'whatsapp' && (
-              <div className="space-y-4">
-                <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs px-3 py-2 rounded-lg mb-4">Evolution API Integration</div>
-                <div>
-                  <label className="block text-xs font-medium text-zinc-400 mb-1">Instance URL</label>
-                  <input type="text" value={evoUrl} onChange={e=>setEvoUrl(e.target.value)} placeholder="https://api.evolution.com/v1" className="w-full bg-zinc-900 border border-zinc-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-500" />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-zinc-400 mb-1">Global API Key</label>
-                  <input type="password" value={evoKey} onChange={e=>setEvoKey(e.target.value)} placeholder="• • • • • • • •" className="w-full bg-zinc-900 border border-zinc-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-500" />
-                </div>
-              </div>
-            )}
-
-            {activeTab === 'sms' && (
-              <div className="space-y-4">
-                <div className="bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs px-3 py-2 rounded-lg mb-4">Custom SMS Gateway</div>
-                <div>
-                  <label className="block text-xs font-medium text-zinc-400 mb-1">API Endpoint URL</label>
-                  <input type="text" value={smsUrl} onChange={e=>setSmsUrl(e.target.value)} placeholder="https://sms-provider.com/api/send" className="w-full bg-zinc-900 border border-zinc-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500" />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-zinc-400 mb-1">API Key / Token</label>
-                  <input type="password" value={smsKey} onChange={e=>setSmsKey(e.target.value)} placeholder="• • • • • • • •" className="w-full bg-zinc-900 border border-zinc-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500" />
-                </div>
-              </div>
-            )}
-
-            {activeTab === 'gmail' && (
-              <div className="space-y-4">
-                <div className="bg-purple-500/10 border border-purple-500/20 text-purple-400 text-xs px-3 py-2 rounded-lg mb-4">Hostinger SMTP</div>
-                <div>
-                  <label className="block text-xs font-medium text-zinc-400 mb-1">SMTP Host</label>
-                  <input type="text" value={smtpHost} onChange={e=>setSmtpHost(e.target.value)} className="w-full bg-zinc-900 border border-zinc-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-purple-500" />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="col-span-2">
-                    <label className="block text-xs font-medium text-zinc-400 mb-1">Email Address</label>
-                    <input type="email" value={smtpEmail} onChange={e=>setSmtpEmail(e.target.value)} className="w-full bg-zinc-900 border border-zinc-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-purple-500" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-zinc-400 mb-1">Port</label>
-                    <input type="text" value={smtpPort} onChange={e=>setSmtpPort(e.target.value)} className="w-full bg-zinc-900 border border-zinc-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-purple-500" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-zinc-400 mb-1">App Password</label>
-                    <input type="password" value={smtpPass} onChange={e=>setSmtpPass(e.target.value)} placeholder="• • • • •" className="w-full bg-zinc-900 border border-zinc-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-purple-500" />
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <button className="w-full mt-4 bg-zinc-800 hover:bg-zinc-700 text-white text-sm py-2 rounded-lg font-medium transition-colors">
-              Test Connection
-            </button>
+          <div className="bg-zinc-950/50 border border-zinc-800/50 rounded-2xl p-6 text-center">
+            <h3 className="text-zinc-400 text-sm font-medium mb-2">Ready to broadcast?</h3>
+            <p className="text-zinc-500 text-xs mb-4">API keys are automatically loaded from your global Settings.</p>
           </div>
 
           <button 
