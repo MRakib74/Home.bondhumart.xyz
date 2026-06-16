@@ -127,14 +127,36 @@ export async function POST(req: Request) {
       age: Object.entries(ageData).map(([age, spend]) => ({ age, spend })).sort((a, b) => a.age.localeCompare(b.age))
     };
 
+    let totalPageViews = 0;
+    let totalAddToCart = 0;
+    let totalInitiateCheckout = 0;
+    let totalReach = 0;
+
+    // Sum up conversion events across all campaigns
+    for (const camp of campaigns) {
+      totalPageViews += camp.pageViews;
+      totalAddToCart += camp.addToCart;
+      totalInitiateCheckout += camp.initiateCheckout;
+    }
+
+    // Sum reach separately from campaign data
+    for (const raw of (perfData.data || [])) {
+      totalReach += parseInt(raw.reach || "0");
+    }
+
     const overview = {
       totalSpend,
       totalImpressions,
+      totalReach,
       totalLinkClicks,
+      totalPageViews,
+      totalAddToCart,
+      totalInitiateCheckout,
       totalPurchases,
       totalPurchaseValue,
       overallRoas: totalSpend > 0 ? (totalPurchaseValue / totalSpend) : 0,
-      overallCpp: totalPurchases > 0 ? (totalSpend / totalPurchases) : 0
+      overallCpp: totalPurchases > 0 ? (totalSpend / totalPurchases) : 0,
+      overallCpm: totalImpressions > 0 ? ((totalSpend / totalImpressions) * 1000) : 0
     };
 
     return NextResponse.json({
