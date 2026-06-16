@@ -1,5 +1,7 @@
 import { GoogleGenerativeAI } from "@google/generative-ai"
 import { PrismaClient } from "@prisma/client"
+import fs from "fs"
+import path from "path"
 
 const prisma = new PrismaClient()
 
@@ -17,9 +19,16 @@ export async function generateCustomerReply(customerPhone: string, messageText: 
     where: { isAdActive: true }
   })
   
-  // b) Fetch company policies from Knowledge Base
-  const policies = await prisma.knowledgeBase.findMany()
-  const policyText = policies.map(p => `${p.topic}: ${p.content}`).join("\n")
+  // b) Fetch Extra Custom Rule from local JSON file
+  let customRule = ""
+  try {
+    const rulePath = path.join(process.cwd(), "ai-rule.json")
+    if (fs.existsSync(rulePath)) {
+      customRule = fs.readFileSync(rulePath, "utf-8")
+    }
+  } catch (err) {
+    console.error("Failed to read custom AI rule:", err)
+  }
   
   // c) Fetch customer history (if exists)
   const customer = await prisma.customer.findUnique({
@@ -39,8 +48,8 @@ Your goal is to be extremely helpful, converting leads into sales.
 3. If the user writes in Banglish (e.g. "kemon acho"), reply in Banglish. If they write in Bengali (e.g. "কেমন আছো"), reply in Bengali. If English, reply in English.
 4. ONLY give information based on the Company Policies and Active Products listed below. Do NOT make up prices or policies.
 
-### COMPANY POLICIES:
-${policyText}
+### EXTRA CUSTOM RULES (FOLLOW THESE STRICTLY IF ANY):
+${customRule || "No extra rules specified. Just follow the general constraints."}
 
 ### ACTIVE AD PRODUCTS (Products currently on offer):
 ${activeProducts.map(p => `- ${p.name}: Price BDT ${p.price}. (Stock: ${p.stock}). Details: ${p.description}`).join("\n")}
