@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Lock, Mail, Key, ShieldCheck, User } from "lucide-react"
+import { Lock, Mail, Key, ShieldCheck, User, Eye, EyeOff } from "lucide-react"
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
@@ -10,6 +10,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Form State
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
 
@@ -100,13 +101,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     <Lock className="h-5 w-5 text-zinc-500" />
                   </div>
                   <input
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full pl-11 pr-4 py-3.5 bg-zinc-950 border border-zinc-800 focus:border-blue-500 rounded-xl text-white outline-none transition-colors"
+                    className="w-full pl-11 pr-12 py-3.5 bg-zinc-950 border border-zinc-800 focus:border-blue-500 rounded-xl text-white outline-none transition-colors"
                     placeholder="Enter password"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute inset-y-0 right-0 pr-4 flex items-center text-zinc-500 hover:text-zinc-300 transition-colors"
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
                 </div>
               </div>
 
