@@ -61,23 +61,23 @@ function KpiCard({ icon: Icon, label, value, color = "text-white", bgIcon }: any
   )
 }
 
-// ---------- Calendar Picker ----------
-function CalendarPicker({ onApply }: { onApply: (since: string, until: string, label: string) => void }) {
-  const [open, setOpen] = useState(false)
-  const [mode, setMode] = useState<"preset" | "custom">("preset")
-  const [label, setLabel] = useState("Last 7 Days")
-  const [since, setSince] = useState("")
-  const [until, setUntil] = useState("")
-  const ref = useRef<HTMLDivElement>(null)
+// ---------- Visual Calendar Picker ----------
+const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"]
+const DAYS = ["Su","Mo","Tu","We","Th","Fr","Sa"]
 
-  const presets = [
-    { label: "Today",       since: "today",   until: "today"      },
-    { label: "Yesterday",   since: "yesterday", until: "yesterday" },
-    { label: "Last 7 Days", since: "last_7d",  until: ""           },
-    { label: "Last 30 Days",since: "last_30d", until: ""           },
-    { label: "This Month",  since: "this_month", until: ""         },
-    { label: "Last Month",  since: "last_month", until: ""         },
-  ]
+function toDateStr(d: Date) {
+  return d.toISOString().slice(0, 10)
+}
+
+function CalendarPicker({ onApply }: { onApply: (since: string, until: string, label: string) => void }) {
+  const today = new Date()
+  const [open, setOpen] = useState(false)
+  const [label, setLabel] = useState("Last 7 Days")
+  const [viewDate, setViewDate] = useState(new Date(today.getFullYear(), today.getMonth(), 1))
+  const [rangeStart, setRangeStart] = useState<string | null>(null)
+  const [rangeEnd, setRangeEnd]     = useState<string | null>(null)
+  const [hoverDate, setHoverDate]   = useState<string | null>(null)
+  const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
@@ -87,67 +87,152 @@ function CalendarPicker({ onApply }: { onApply: (since: string, until: string, l
     return () => document.removeEventListener("mousedown", handleClick)
   }, [])
 
+  const presets = [
+    { label: "Today",       getValue: () => { const d = toDateStr(today); return { since: d, until: d } } },
+    { label: "Yesterday",   getValue: () => { const d = new Date(today); d.setDate(d.getDate()-1); const s = toDateStr(d); return { since: s, until: s } } },
+    { label: "Last 7 Days", getValue: () => { const s = new Date(today); s.setDate(s.getDate()-6); return { since: toDateStr(s), until: toDateStr(today) } } },
+    { label: "Last 30 Days",getValue: () => { const s = new Date(today); s.setDate(s.getDate()-29); return { since: toDateStr(s), until: toDateStr(today) } } },
+    { label: "This Month",  getValue: () => { const s = new Date(today.getFullYear(), today.getMonth(), 1); return { since: toDateStr(s), until: toDateStr(today) } } },
+    { label: "Last Month",  getValue: () => { const s = new Date(today.getFullYear(), today.getMonth()-1, 1); const e = new Date(today.getFullYear(), today.getMonth(), 0); return { since: toDateStr(s), until: toDateStr(e) } } },
+  ]
+
   const applyPreset = (p: typeof presets[0]) => {
+    const { since, until } = p.getValue()
     setLabel(p.label)
-    onApply(p.since, p.until, p.label)
+    setRangeStart(since); setRangeEnd(until)
+    onApply(since, until, p.label)
     setOpen(false)
   }
 
-  const applyCustom = () => {
-    if (!since || !until) return
-    const l = `${since} → ${until}`
-    setLabel(l)
-    onApply(since, until, l)
+  const applyRange = (s: string, e: string) => {
+    const sorted = s <= e ? [s, e] : [e, s]
+    const lbl = `${sorted[0]} → ${sorted[1]}`
+    setLabel(lbl)
+    onApply(sorted[0], sorted[1], lbl)
     setOpen(false)
   }
+
+  const handleDayClick = (ds: string) => {
+    if (!rangeStart || (rangeStart && rangeEnd)) {
+      setRangeStart(ds); setRangeEnd(null)
+    } else {
+      setRangeEnd(ds)
+      applyRange(rangeStart, ds)
+    }
+  }
+
+  // Build calendar grid
+  const year  = viewDate.getFullYear()
+  const month = viewDate.getMonth()
+  const firstDay = new Date(year, month, 1).getDay()
+  const daysInMonth = new Date(year, month + 1, 0).getDate()
+  const cells: (string | null)[] = []
+  for (let i = 0; i < firstDay; i++) cells.push(null)
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dt = new Date(year, month, d)
+    cells.push(toDateStr(dt))
+  }
+
+  const inRange = (ds: string) => {
+    const lo = rangeStart && !rangeEnd && hoverDate
+      ? [rangeStart, hoverDate].sort()[0]
+      : (rangeStart && rangeEnd ? [rangeStart, rangeEnd].sort()[0] : null)
+    const hi = rangeStart && !rangeEnd && hoverDate
+      ? [rangeStart, hoverDate].sort()[1]
+      : (rangeStart && rangeEnd ? [rangeStart, rangeEnd].sort()[1] : null)
+    return lo && hi && ds > lo && ds < hi
+  }
+  const isStart = (ds: string) => {
+    const lo = rangeStart && rangeEnd ? [rangeStart, rangeEnd].sort()[0] : rangeStart
+    return ds === lo
+  }
+  const isEnd = (ds: string) => {
+    const hi = rangeStart && rangeEnd ? [rangeStart, rangeEnd].sort()[1] : null
+    return ds === hi
+  }
+
+  const prevMonth = () => setViewDate(new Date(year, month - 1, 1))
+  const nextMonth = () => setViewDate(new Date(year, month + 1, 1))
 
   return (
     <div className="relative" ref={ref}>
       <button
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-2 bg-zinc-900 border border-zinc-800 hover:border-zinc-600 text-white rounded-xl px-4 py-2.5 font-medium transition-colors text-sm"
+        className="flex items-center gap-2 bg-zinc-900 border border-zinc-800 hover:border-orange-500/50 text-white rounded-xl px-4 py-2.5 font-medium transition-all text-sm"
       >
         <Calendar className="h-4 w-4 text-orange-400" />
         {label}
       </button>
 
       {open && (
-        <div className="absolute right-0 top-12 z-50 bg-zinc-950 border border-zinc-800 rounded-2xl p-4 w-80 shadow-2xl animate-in fade-in slide-in-from-top-2">
-          <div className="flex gap-2 mb-4 bg-zinc-900 p-1 rounded-lg">
-            <button onClick={() => setMode("preset")} className={`flex-1 text-xs py-1.5 rounded-md font-bold transition-all ${mode === "preset" ? "bg-orange-500 text-white" : "text-zinc-400"}`}>Presets</button>
-            <button onClick={() => setMode("custom")} className={`flex-1 text-xs py-1.5 rounded-md font-bold transition-all ${mode === "custom" ? "bg-orange-500 text-white" : "text-zinc-400"}`}>Custom Range</button>
+        <div className="absolute right-0 top-12 z-50 flex bg-zinc-950 border border-zinc-800 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
+          
+          {/* Left: Presets */}
+          <div className="border-r border-zinc-800 p-3 flex flex-col gap-1 min-w-[130px]">
+            <p className="text-zinc-500 text-[10px] uppercase tracking-widest font-bold mb-1 px-1">Quick Select</p>
+            {presets.map(p => (
+              <button
+                key={p.label}
+                onClick={() => applyPreset(p)}
+                className={`text-sm text-left px-3 py-2 rounded-xl transition-all font-medium ${label === p.label ? "bg-orange-500 text-white" : "text-zinc-300 hover:bg-zinc-800 hover:text-white"}`}
+              >
+                {p.label}
+              </button>
+            ))}
           </div>
 
-          {mode === "preset" ? (
-            <div className="grid grid-cols-2 gap-2">
-              {presets.map(p => (
-                <button
-                  key={p.label}
-                  onClick={() => applyPreset(p)}
-                  className={`text-sm py-2 px-3 rounded-xl border transition-colors text-left ${label === p.label ? "border-orange-500 bg-orange-500/10 text-orange-400" : "border-zinc-800 text-zinc-300 hover:border-zinc-600"}`}
-                >
-                  {p.label}
-                </button>
+          {/* Right: Calendar */}
+          <div className="p-4 w-72">
+            {/* Month Nav */}
+            <div className="flex items-center justify-between mb-3">
+              <button onClick={prevMonth} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors text-lg">‹</button>
+              <span className="text-sm font-bold text-white">{MONTHS[month]} {year}</span>
+              <button onClick={nextMonth} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors text-lg">›</button>
+            </div>
+
+            {/* Day Headers */}
+            <div className="grid grid-cols-7 mb-1">
+              {DAYS.map(d => (
+                <div key={d} className="text-center text-[10px] font-bold text-zinc-500 py-1">{d}</div>
               ))}
             </div>
-          ) : (
-            <div className="space-y-3">
-              <div>
-                <label className="text-xs text-zinc-400 mb-1 block">From Date</label>
-                <input type="date" value={since} onChange={e => setSince(e.target.value)}
-                  className="w-full bg-zinc-900 border border-zinc-800 text-white rounded-xl px-3 py-2 text-sm outline-none focus:border-orange-500" />
-              </div>
-              <div>
-                <label className="text-xs text-zinc-400 mb-1 block">To Date</label>
-                <input type="date" value={until} onChange={e => setUntil(e.target.value)}
-                  className="w-full bg-zinc-900 border border-zinc-800 text-white rounded-xl px-3 py-2 text-sm outline-none focus:border-orange-500" />
-              </div>
-              <button onClick={applyCustom}
-                className="w-full bg-orange-500 hover:bg-orange-400 text-white rounded-xl py-2 font-bold text-sm transition-colors">
-                Apply Custom Range
-              </button>
+
+            {/* Day Grid */}
+            <div className="grid grid-cols-7 gap-y-0.5">
+              {cells.map((ds, i) => {
+                if (!ds) return <div key={i} />
+                const isToday = ds === toDateStr(today)
+                const selected = isStart(ds) || isEnd(ds)
+                const ranged   = inRange(ds)
+                return (
+                  <button
+                    key={ds}
+                    onClick={() => handleDayClick(ds)}
+                    onMouseEnter={() => setHoverDate(ds)}
+                    onMouseLeave={() => setHoverDate(null)}
+                    className={`
+                      relative w-8 h-8 text-xs font-medium rounded-lg transition-all mx-auto flex items-center justify-center
+                      ${selected ? "bg-orange-500 text-white shadow-lg shadow-orange-500/30 scale-105 z-10" : ""}
+                      ${ranged   ? "bg-orange-500/15 text-orange-300 rounded-none" : ""}
+                      ${!selected && !ranged ? "text-zinc-300 hover:bg-zinc-800 hover:text-white" : ""}
+                      ${isToday && !selected ? "ring-1 ring-orange-500/50" : ""}
+                    `}
+                  >
+                    {parseInt(ds.slice(8))}
+                  </button>
+                )
+              })}
             </div>
-          )}
+
+            {/* Range display */}
+            {rangeStart && (
+              <div className="mt-3 pt-3 border-t border-zinc-800 text-xs text-zinc-400 flex items-center gap-1">
+                <span className="bg-orange-500/20 text-orange-400 px-2 py-0.5 rounded">{rangeStart}</span>
+                {rangeEnd && <><span>→</span><span className="bg-orange-500/20 text-orange-400 px-2 py-0.5 rounded">{rangeEnd}</span></>}
+                {!rangeEnd && <span className="text-zinc-600 italic">pick end date</span>}
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>
