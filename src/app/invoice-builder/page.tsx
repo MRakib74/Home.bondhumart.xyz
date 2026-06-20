@@ -85,18 +85,24 @@ export default function InvoiceBuilderPage() {
               <label className="flex items-center gap-2 text-sm font-bold text-white uppercase tracking-wider">
                 <LayoutGrid className="h-4 w-4 text-emerald-500" /> A4 Paper Grid
               </label>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                <button
+                  onClick={() => updateConfig('grid', '3x4')}
+                  className={`p-3 rounded-xl border text-sm font-medium transition-all ${config.grid === '3x4' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/50' : 'bg-zinc-950 text-zinc-400 border-zinc-800 hover:border-zinc-600'}`}
+                >
+                  3x4 (12 / page)
+                </button>
                 <button
                   onClick={() => updateConfig('grid', '3x3')}
                   className={`p-3 rounded-xl border text-sm font-medium transition-all ${config.grid === '3x3' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/50' : 'bg-zinc-950 text-zinc-400 border-zinc-800 hover:border-zinc-600'}`}
                 >
-                  3x3 (9 per page)
+                  3x3 (9 / page)
                 </button>
                 <button
                   onClick={() => updateConfig('grid', '2x3')}
                   className={`p-3 rounded-xl border text-sm font-medium transition-all ${config.grid === '2x3' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/50' : 'bg-zinc-950 text-zinc-400 border-zinc-800 hover:border-zinc-600'}`}
                 >
-                  2x3 (6 per page)
+                  2x3 (6 / page)
                 </button>
               </div>
             </div>
@@ -164,8 +170,8 @@ export default function InvoiceBuilderPage() {
                 transformOrigin: 'center center',
                 backgroundColor: '#fff',
                 display: 'grid',
-                gridTemplateColumns: config.grid === '3x3' ? 'repeat(3, 1fr)' : 'repeat(2, 1fr)',
-                gridTemplateRows: config.grid === '3x3' ? 'repeat(3, 1fr)' : 'repeat(3, 1fr)',
+                gridTemplateColumns: config.grid === '3x3' || config.grid === '3x4' ? 'repeat(3, 1fr)' : 'repeat(2, 1fr)',
+                gridTemplateRows: config.grid === '3x4' ? 'repeat(4, 1fr)' : 'repeat(3, 1fr)',
                 gap: '8mm',
                 padding: '8mm'
               }}
@@ -176,7 +182,7 @@ export default function InvoiceBuilderPage() {
               ))}
               
               {/* Render wireframes for the rest */}
-              {Array.from({ length: (config.grid === '3x3' ? 8 : 5) }).map((_, i) => (
+              {Array.from({ length: config.grid === '3x4' ? 11 : (config.grid === '3x3' ? 8 : 5) }).map((_, i) => (
                 <div key={i+1} className="border-2 border-dashed border-gray-200 rounded-lg flex items-center justify-center">
                   <span className="text-gray-300 font-bold text-xl opacity-50">Invoice Space</span>
                 </div>
@@ -193,7 +199,7 @@ export default function InvoiceBuilderPage() {
 
 function DummyInvoice({ config }: { config: any }) {
   const isBW = config.theme === 'bw';
-  const is3x3 = config.grid === '3x3';
+  const isCompact = config.grid === '3x3' || config.grid === '3x4';
 
   return (
     <div 
@@ -205,7 +211,7 @@ function DummyInvoice({ config }: { config: any }) {
         background: '#fff',
         color: '#000',
         fontFamily: 'sans-serif',
-        fontSize: is3x3 ? '9px' : '11px'
+        fontSize: isCompact ? '9px' : '11px'
       }}
     >
       <div 
@@ -213,21 +219,21 @@ function DummyInvoice({ config }: { config: any }) {
           background: isBW ? '#fff' : 'linear-gradient(135deg, #0ea5e9, #10b981)',
           color: isBW ? '#000' : '#fff',
           borderBottom: isBW ? '2px solid #000' : 'none',
-          padding: is3x3 ? '6px 8px' : '8px 12px',
+          padding: isCompact ? '6px 8px' : '8px 12px',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center'
         }}
       >
         <div>
-          <h1 style={{ margin: 0, fontSize: is3x3 ? '12px' : '14px', fontWeight: 800 }}>BondhuMart</h1>
-          <p style={{ margin: '2px 0 0', fontSize: is3x3 ? '8px' : '9px', opacity: 0.9 }}>Trusted Online Shop</p>
+          <h1 style={{ margin: 0, fontSize: isCompact ? '12px' : '14px', fontWeight: 800 }}>BondhuMart</h1>
+          <p style={{ margin: '2px 0 0', fontSize: isCompact ? '8px' : '9px', opacity: 0.9 }}>Trusted Online Shop</p>
         </div>
         <div style={{ textAlign: 'right' }}>
           {config.courierPosition === 'top-right' && (
             <div style={{ 
               marginBottom: '4px', 
-              fontSize: is3x3 ? '10px' : '12px', 
+              fontSize: isCompact ? '10px' : '12px', 
               fontWeight: 900,
               border: isBW ? '1px solid #000' : 'none',
               background: isBW ? '#000' : 'rgba(255,255,255,0.2)',
@@ -246,7 +252,7 @@ function DummyInvoice({ config }: { config: any }) {
             padding: '2px 6px',
             borderRadius: isBW ? '0' : '10px',
             fontWeight: 'bold',
-            fontSize: is3x3 ? '8px' : '9px',
+            fontSize: isCompact ? '8px' : '9px',
             display: config.courierPosition === 'top-right' ? 'block' : 'inline-block'
           }}>
             INVOICE #9709-0
@@ -258,14 +264,14 @@ function DummyInvoice({ config }: { config: any }) {
         display: 'flex',
         justifyContent: 'space-between',
         borderBottom: '1px solid ' + (isBW ? '#000' : '#e4e4e7'),
-        padding: is3x3 ? '4px 6px' : '6px 10px',
+        padding: isCompact ? '4px 6px' : '6px 10px',
         background: isBW ? '#fff' : '#fafafa'
       }}>
         {config.showSellerAddress && (
           <div style={{ width: '45%' }}>
-            <div style={{ fontSize: is3x3 ? '8px' : '9px', color: isBW ? '#000' : '#71717a', textTransform: 'uppercase', fontWeight: 'bold' }}>Seller</div>
-            <div style={{ fontWeight: 600, fontSize: is3x3 ? '9px' : '10px' }}>BondhuMart</div>
-            <div style={{ color: isBW ? '#000' : '#52525b', fontSize: is3x3 ? '8px' : '9px', marginTop: '2px' }}>Dhaka, Bangladesh</div>
+            <div style={{ fontSize: isCompact ? '8px' : '9px', color: isBW ? '#000' : '#71717a', textTransform: 'uppercase', fontWeight: 'bold' }}>Seller</div>
+            <div style={{ fontWeight: 600, fontSize: isCompact ? '9px' : '10px' }}>BondhuMart</div>
+            <div style={{ color: isBW ? '#000' : '#52525b', fontSize: isCompact ? '8px' : '9px', marginTop: '2px' }}>Dhaka, Bangladesh</div>
           </div>
         )}
         <div style={{ 
@@ -273,12 +279,12 @@ function DummyInvoice({ config }: { config: any }) {
           borderLeft: config.showSellerAddress ? (isBW ? '1px solid #000' : '2px solid #10b981') : 'none',
           paddingLeft: config.showSellerAddress ? '6px' : '0'
         }}>
-          <div style={{ fontSize: is3x3 ? '8px' : '9px', color: isBW ? '#000' : '#71717a', textTransform: 'uppercase', fontWeight: 'bold' }}>Customer</div>
-          <div style={{ fontWeight: 600, fontSize: is3x3 ? '9px' : '10px' }}>Akash</div>
+          <div style={{ fontSize: isCompact ? '8px' : '9px', color: isBW ? '#000' : '#71717a', textTransform: 'uppercase', fontWeight: 'bold' }}>Customer</div>
+          <div style={{ fontWeight: 600, fontSize: isCompact ? '9px' : '10px' }}>Akash</div>
           {config.showCustomerPhone && (
             <div style={{ color: isBW ? '#000' : '#0ea5e9', fontWeight: 'bold' }}>📞 01823927411</div>
           )}
-          <div style={{ fontSize: is3x3 ? '8px' : '9.5px', marginTop: '2px', lineHeight: 1.25 }}>মীর ফিলিং স্টেশন, নতুন ব্রীজ, বাকলিয়া, চট্টগ্রাম</div>
+          <div style={{ fontSize: isCompact ? '8px' : '9.5px', marginTop: '2px', lineHeight: 1.25 }}>মীর ফিলিং স্টেশন, নতুন ব্রীজ, বাকলিয়া, চট্টগ্রাম</div>
         </div>
       </div>
 
@@ -286,14 +292,14 @@ function DummyInvoice({ config }: { config: any }) {
         <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '4px' }}>
           <thead>
             <tr>
-              <th style={{ borderBottom: '1px solid ' + (isBW?'#000':'#e4e4e7'), textAlign: 'left', fontSize: is3x3?'8px':'9px' }}>PRODUCT</th>
-              <th style={{ borderBottom: '1px solid ' + (isBW?'#000':'#e4e4e7'), textAlign: 'center', fontSize: is3x3?'8px':'9px' }}>QTY</th>
-              <th style={{ borderBottom: '1px solid ' + (isBW?'#000':'#e4e4e7'), textAlign: 'right', fontSize: is3x3?'8px':'9px' }}>PRICE</th>
+              <th style={{ borderBottom: '1px solid ' + (isBW?'#000':'#e4e4e7'), textAlign: 'left', fontSize: isCompact?'8px':'9px' }}>PRODUCT</th>
+              <th style={{ borderBottom: '1px solid ' + (isBW?'#000':'#e4e4e7'), textAlign: 'center', fontSize: isCompact?'8px':'9px' }}>QTY</th>
+              <th style={{ borderBottom: '1px solid ' + (isBW?'#000':'#e4e4e7'), textAlign: 'right', fontSize: isCompact?'8px':'9px' }}>PRICE</th>
             </tr>
           </thead>
           <tbody>
             <tr>
-              <td style={{ borderBottom: '1px dashed ' + (isBW?'#000':'#e4e4e7'), padding: '4px 0', fontSize: is3x3?'9px':'10px', fontWeight: 600 }}>Fresh Sleeping Spray (x1)</td>
+              <td style={{ borderBottom: '1px dashed ' + (isBW?'#000':'#e4e4e7'), padding: '4px 0', fontSize: isCompact?'9px':'10px', fontWeight: 600 }}>Fresh Sleeping Spray (x1)</td>
               <td style={{ borderBottom: '1px dashed ' + (isBW?'#000':'#e4e4e7'), textAlign: 'center', padding: '4px 0' }}>1</td>
               <td style={{ borderBottom: '1px dashed ' + (isBW?'#000':'#e4e4e7'), textAlign: 'right', padding: '4px 0' }}>৳ 990</td>
             </tr>
@@ -301,9 +307,9 @@ function DummyInvoice({ config }: { config: any }) {
         </table>
       </div>
 
-      <div style={{ padding: is3x3 ? '2px 6px' : '4px 10px', borderTop: '1px solid ' + (isBW?'#000':'#e4e4e7') }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: is3x3?'9px':'10px', fontWeight: 'bold' }}><span>Subtotal</span><span>৳ 990</span></div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: is3x3?'9px':'10px', fontWeight: 'bold', margin: '1px 0' }}><span>Delivery</span><span>৳ 0</span></div>
+      <div style={{ padding: isCompact ? '2px 6px' : '4px 10px', borderTop: '1px solid ' + (isBW?'#000':'#e4e4e7') }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: isCompact?'9px':'10px', fontWeight: 'bold' }}><span>Subtotal</span><span>৳ 990</span></div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: isCompact?'9px':'10px', fontWeight: 'bold', margin: '1px 0' }}><span>Delivery</span><span>৳ 0</span></div>
         <div style={{ 
           background: isBW ? '#000' : '#18181b', 
           color: '#fff', 
@@ -313,7 +319,7 @@ function DummyInvoice({ config }: { config: any }) {
           justifyContent: 'space-between', 
           fontWeight: 'bold', 
           marginTop: '2px',
-          fontSize: is3x3 ? '10px' : '12px'
+          fontSize: isCompact ? '10px' : '12px'
         }}>
           <span>TOTAL (COD)</span>
           <span style={{ color: isBW ? '#fff' : '#10b981' }}>৳ 990</span>
@@ -328,7 +334,7 @@ function DummyInvoice({ config }: { config: any }) {
           margin: '4px 6px 6px', 
           border: isBW ? '1px solid #000' : '1px dashed #d4d4d8', 
           fontWeight: 'bold',
-          fontSize: is3x3 ? '9px' : '10px'
+          fontSize: isCompact ? '9px' : '10px'
         }}>
           Courier: STEADFAST | ID: 261536260
         </div>

@@ -249,39 +249,40 @@ export default function OrdersPage() {
 
   const getInvoiceStyles = (config: any) => {
     const isBW = config.theme === 'bw';
-    const is3x3 = config.grid === '3x3';
+    const isCompact = config.grid === '3x3' || config.grid === '3x4';
+    const is3x4 = config.grid === '3x4';
     
     return `
     <style>
       @page { size: A4 portrait; margin: 10mm; }
-      body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background: #fff; color: #000; font-size: ${is3x3 ? '9px' : '11px'}; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-      .a4-page { width: 190mm; height: 277mm; margin: 0 auto; display: grid; grid-template-columns: ${is3x3 ? 'repeat(3, 1fr)' : 'repeat(2, 1fr)'}; grid-template-rows: repeat(3, 1fr); gap: 10mm; box-sizing: border-box; page-break-after: always; }
+      body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background: #fff; color: #000; font-size: ${isCompact ? '9px' : '11px'}; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .a4-page { width: 190mm; height: 277mm; margin: 0 auto; display: grid; grid-template-columns: ${isCompact ? 'repeat(3, 1fr)' : 'repeat(2, 1fr)'}; grid-template-rows: ${is3x4 ? 'repeat(4, 1fr)' : 'repeat(3, 1fr)'}; gap: 10mm; box-sizing: border-box; page-break-after: always; }
       .a4-page:last-child { page-break-after: auto; }
       .invoice-page { width: 100%; height: 100%; box-sizing: border-box; border: ${isBW ? '1px solid #000' : '1px dashed #ccc'}; display: flex; flex-direction: column; overflow: hidden; background: #fff; }
       
-      .header { background: ${isBW ? '#fff' : 'linear-gradient(135deg, #0ea5e9, #10b981)'}; color: ${isBW ? '#000' : '#fff'}; border-bottom: ${isBW ? '2px solid #000' : 'none'}; padding: ${is3x3 ? '6px 8px' : '8px 12px'}; display: flex; justify-content: space-between; align-items: center; }
-      .header h1 { margin: 0; font-size: ${is3x3 ? '12px' : '14px'}; font-weight: 800; }
-      .header p { margin: 2px 0 0; font-size: ${is3x3 ? '8px' : '9px'}; opacity: 0.9; }
-      .invoice-badge { background: ${isBW ? '#fff' : 'rgba(255,255,255,0.2)'}; border: ${isBW ? '1px solid #000' : 'none'}; padding: 2px 6px; border-radius: ${isBW ? '0' : '10px'}; font-weight: bold; font-size: ${is3x3 ? '8px' : '9px'}; color: ${isBW ? '#000' : '#fff'}; display: ${config.courierPosition === 'top-right' ? 'block' : 'inline-block'}; }
-      .top-courier-id { margin-bottom: 4px; font-size: ${is3x3 ? '10px' : '12px'}; font-weight: 900; border: ${isBW ? '1px solid #000' : 'none'}; background: ${isBW ? '#000' : 'rgba(255,255,255,0.2)'}; color: #fff; padding: 2px 6px; border-radius: 4px; display: inline-block; }
+      .header { background: ${isBW ? '#fff' : 'linear-gradient(135deg, #0ea5e9, #10b981)'}; color: ${isBW ? '#000' : '#fff'}; border-bottom: ${isBW ? '2px solid #000' : 'none'}; padding: ${isCompact ? '6px 8px' : '8px 12px'}; display: flex; justify-content: space-between; align-items: center; }
+      .header h1 { margin: 0; font-size: ${isCompact ? '12px' : '14px'}; font-weight: 800; }
+      .header p { margin: 2px 0 0; font-size: ${isCompact ? '8px' : '9px'}; opacity: 0.9; }
+      .invoice-badge { background: ${isBW ? '#fff' : 'rgba(255,255,255,0.2)'}; border: ${isBW ? '1px solid #000' : 'none'}; padding: 2px 6px; border-radius: ${isBW ? '0' : '10px'}; font-weight: bold; font-size: ${isCompact ? '8px' : '9px'}; color: ${isBW ? '#000' : '#fff'}; display: ${config.courierPosition === 'top-right' ? 'block' : 'inline-block'}; }
+      .top-courier-id { margin-bottom: 4px; font-size: ${isCompact ? '10px' : '12px'}; font-weight: 900; border: ${isBW ? '1px solid #000' : 'none'}; background: ${isBW ? '#000' : 'rgba(255,255,255,0.2)'}; color: #fff; padding: 2px 6px; border-radius: 4px; display: inline-block; }
       
-      .details-box { display: flex; justify-content: space-between; border-bottom: 1px solid ${isBW ? '#000' : '#e4e4e7'}; padding: ${is3x3 ? '4px 6px' : '6px 10px'}; background: ${isBW ? '#fff' : '#fafafa'}; }
+      .details-box { display: flex; justify-content: space-between; border-bottom: 1px solid ${isBW ? '#000' : '#e4e4e7'}; padding: ${isCompact ? '4px 6px' : '6px 10px'}; background: ${isBW ? '#fff' : '#fafafa'}; }
       .box-seller { width: 45%; display: ${config.showSellerAddress ? 'block' : 'none'}; }
       .box-customer { width: ${config.showSellerAddress ? '50%' : '100%'}; border-left: ${config.showSellerAddress ? (isBW ? '1px solid #000' : '2px solid #10b981') : 'none'}; padding-left: ${config.showSellerAddress ? '6px' : '0'}; }
-      .box-title { font-size: ${is3x3 ? '8px' : '9px'}; color: ${isBW ? '#000' : '#71717a'}; text-transform: uppercase; font-weight: bold; margin-bottom: 2px; }
-      .box-text { font-size: ${is3x3 ? '9px' : '10px'}; margin: 1px 0; font-weight: 600; }
-      .address-text { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: ${is3x3 ? '8px' : '9.5px'}; margin-top: 2px; color: ${isBW ? '#000' : '#52525b'}; line-height: 1.25; }
+      .box-title { font-size: ${isCompact ? '8px' : '9px'}; color: ${isBW ? '#000' : '#71717a'}; text-transform: uppercase; font-weight: bold; margin-bottom: 2px; }
+      .box-text { font-size: ${isCompact ? '9px' : '10px'}; margin: 1px 0; font-weight: 600; }
+      .address-text { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: ${isCompact ? '8px' : '9.5px'}; margin-top: 2px; color: ${isBW ? '#000' : '#52525b'}; line-height: 1.25; }
       
       .table-container { padding: 0 6px; overflow: hidden; min-height: 0; }
       .table { width: 100%; border-collapse: collapse; margin-top: 4px; }
-      .table th { border-bottom: 1px solid ${isBW ? '#000' : '#e4e4e7'}; padding: 2px 0; text-align: left; font-size: ${is3x3 ? '8px' : '9px'}; color: ${isBW ? '#000' : '#71717a'}; text-transform: uppercase; }
-      .table td { border-bottom: 1px dashed ${isBW ? '#000' : '#e4e4e7'}; padding: 4px 0; font-size: ${is3x3 ? '9px' : '10px'}; font-weight: 600; }
+      .table th { border-bottom: 1px solid ${isBW ? '#000' : '#e4e4e7'}; padding: 2px 0; text-align: left; font-size: ${isCompact ? '8px' : '9px'}; color: ${isBW ? '#000' : '#71717a'}; text-transform: uppercase; }
+      .table td { border-bottom: 1px dashed ${isBW ? '#000' : '#e4e4e7'}; padding: 4px 0; font-size: ${isCompact ? '9px' : '10px'}; font-weight: 600; }
       
-      .summary { padding: ${is3x3 ? '2px 6px' : '4px 10px'}; border-top: 1px solid ${isBW ? '#000' : '#e4e4e7'}; flex-shrink: 0; }
-      .summary-row { display: flex; justify-content: space-between; padding: 1px 0; font-size: ${is3x3 ? '9px' : '10px'}; color: ${isBW ? '#000' : '#52525b'}; font-weight: bold; }
-      .total-row { background: ${isBW ? '#000' : '#18181b'}; color: white; padding: 4px 6px; border-radius: ${isBW ? '0' : '4px'}; display: flex; justify-content: space-between; align-items: center; font-weight: bold; font-size: ${is3x3 ? '10px' : '12px'}; margin-top: 2px; }
+      .summary { padding: ${isCompact ? '2px 6px' : '4px 10px'}; border-top: 1px solid ${isBW ? '#000' : '#e4e4e7'}; flex-shrink: 0; }
+      .summary-row { display: flex; justify-content: space-between; padding: 1px 0; font-size: ${isCompact ? '9px' : '10px'}; color: ${isBW ? '#000' : '#52525b'}; font-weight: bold; }
+      .total-row { background: ${isBW ? '#000' : '#18181b'}; color: white; padding: 4px 6px; border-radius: ${isBW ? '0' : '4px'}; display: flex; justify-content: space-between; align-items: center; font-weight: bold; font-size: ${isCompact ? '10px' : '12px'}; margin-top: 2px; }
       
-      .courier-info { text-align: center; background: ${isBW ? '#fff' : '#f4f4f5'}; padding: 4px; margin: 4px 6px; border-radius: 4px; font-size: ${is3x3 ? '9px' : '10px'}; font-weight: bold; border: ${isBW ? '1px solid #000' : '1px dashed #d4d4d8'}; flex-shrink: 0; }
+      .courier-info { text-align: center; background: ${isBW ? '#fff' : '#f4f4f5'}; padding: 4px; margin: 4px 6px; border-radius: 4px; font-size: ${isCompact ? '9px' : '10px'}; font-weight: bold; border: ${isBW ? '1px solid #000' : '1px dashed #d4d4d8'}; flex-shrink: 0; }
       
       @media screen {
         body { background: #52525b; padding: 20mm 0; }
@@ -395,8 +396,8 @@ export default function OrdersPage() {
 
     const selectedOrdersData = orders.filter(o => selectedIds.includes(o.id));
 
-    // Chunk orders into groups based on grid layout (9 for 3x3, 6 for 2x3)
-    const itemsPerPage = config.grid === '3x3' ? 9 : 6;
+    // Chunk orders into groups based on grid layout (12 for 3x4, 9 for 3x3, 6 for 2x3)
+    const itemsPerPage = config.grid === '3x4' ? 12 : (config.grid === '3x3' ? 9 : 6);
     const chunks = [];
     for (let i = 0; i < selectedOrdersData.length; i += itemsPerPage) {
       chunks.push(selectedOrdersData.slice(i, i + itemsPerPage));
