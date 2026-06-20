@@ -307,7 +307,7 @@ function DummyInvoice({ config }: { config: any }) {
         </table>
       </div>
 
-      <div style={{ padding: isCompact ? '2px 6px' : '4px 10px', borderTop: '1px solid ' + (isBW?'#000':'#e4e4e7') }}>
+      <div style={{ padding: isCompact ? '2px 6px 4px 6px' : '4px 10px 8px 10px', borderTop: '1px solid ' + (isBW?'#000':'#e4e4e7') }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: isCompact?'9px':'10px', fontWeight: 'bold' }}><span>Subtotal</span><span>৳ 990</span></div>
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: isCompact?'9px':'10px', fontWeight: 'bold', margin: '1px 0' }}><span>Delivery</span><span>৳ 0</span></div>
         <div style={{ 
@@ -331,7 +331,7 @@ function DummyInvoice({ config }: { config: any }) {
           textAlign: 'center', 
           background: isBW ? '#fff' : '#f4f4f5', 
           padding: '4px', 
-          margin: '4px 6px 6px', 
+          margin: '4px 6px 6px 6px', 
           border: isBW ? '1px solid #000' : '1px dashed #d4d4d8', 
           fontWeight: 'bold',
           fontSize: isCompact ? '9px' : '10px'
