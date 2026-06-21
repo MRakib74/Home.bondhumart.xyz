@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Settings, MessageSquare, Phone, Save, CheckCircle2, Copy, AlertTriangle, Link as LinkIcon, BarChart3 } from "lucide-react"
+import { Settings, MessageSquare, Phone, Save, CheckCircle2, Copy, AlertTriangle, Link as LinkIcon, BarChart3, Globe } from "lucide-react"
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState('messenger')
@@ -32,6 +32,14 @@ export default function SettingsPage() {
   const [fbAdAccountId, setFbAdAccountId] = useState('')
   const [fbAdAccessToken, setFbAdAccessToken] = useState('')
 
+  // Store Settings State
+  const [pixelId, setPixelId] = useState('')
+  const [deliveryInside, setDeliveryInside] = useState('80')
+  const [deliveryOutside, setDeliveryOutside] = useState('150')
+  const [bannerText, setBannerText] = useState('')
+  const [contactPhone, setContactPhone] = useState('')
+  const [isStoreSettingsLoading, setIsStoreSettingsLoading] = useState(false)
+
   useEffect(() => {
     try {
       const data = localStorage.getItem('bondhu_chat_config')
@@ -52,14 +60,43 @@ export default function SettingsPage() {
         setFbAdAccessToken(parsed.fbAdAccessToken || '')
       }
     } catch(e) {}
+
+    // Fetch store settings from DB
+    fetch('/api/store-settings')
+      .then(res => res.json())
+      .then(data => {
+        if (!data.error) {
+          setPixelId(data.pixelId || '')
+          setDeliveryInside(data.deliveryInside?.toString() || '80')
+          setDeliveryOutside(data.deliveryOutside?.toString() || '150')
+          setBannerText(data.bannerText || '')
+          setContactPhone(data.contactPhone || '')
+        }
+      })
+      .catch(err => console.error(err))
   }, [])
 
-  const handleSave = () => {
-    localStorage.setItem('bondhu_chat_config', JSON.stringify({
-      fbPageId, fbAccessToken, waInstance, waApiKey, waBaseUrl,
-      smsUrl, smsKey, smtpHost, smtpPort, smtpEmail, smtpPass,
-      fbAdAccountId, fbAdAccessToken
-    }))
+  const handleSave = async () => {
+    if (activeTab === 'storefront') {
+      setIsStoreSettingsLoading(true)
+      try {
+        await fetch('/api/store-settings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ pixelId, deliveryInside, deliveryOutside, bannerText, contactPhone })
+        })
+      } catch (e) {
+        console.error(e)
+      } finally {
+        setIsStoreSettingsLoading(false)
+      }
+    } else {
+      localStorage.setItem('bondhu_chat_config', JSON.stringify({
+        fbPageId, fbAccessToken, waInstance, waApiKey, waBaseUrl,
+        smsUrl, smsKey, smtpHost, smtpPort, smtpEmail, smtpPass,
+        fbAdAccountId, fbAdAccessToken
+      }))
+    }
     setSaved(true)
     setTimeout(() => setSaved(false), 3000)
   }
@@ -78,7 +115,7 @@ export default function SettingsPage() {
           </h2>
           <p className="text-zinc-400 mt-1">Connect your Facebook Page and WhatsApp API to the Live AI Chat.</p>
         </div>
-        <button onClick={handleSave} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 rounded-xl font-medium text-sm transition-all active:scale-95 shadow-lg shadow-blue-600/20">
+        <button onClick={handleSave} disabled={isStoreSettingsLoading} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white px-5 py-2.5 rounded-xl font-medium text-sm transition-all active:scale-95 shadow-lg shadow-blue-600/20">
           {saved ? <CheckCircle2 className="h-4 w-4" /> : <Save className="h-4 w-4" />}
           {saved ? 'Saved!' : 'Save Settings'}
         </button>
@@ -114,6 +151,12 @@ export default function SettingsPage() {
           className={`px-4 py-2 text-sm font-bold rounded-lg transition-colors flex items-center gap-2 whitespace-nowrap ${activeTab === 'fbads' ? 'bg-orange-500/20 text-orange-400' : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900'}`}
         >
           <BarChart3 className="h-4 w-4" /> Facebook Ads
+        </button>
+        <button 
+          onClick={() => setActiveTab('storefront')} 
+          className={`px-4 py-2 text-sm font-bold rounded-lg transition-colors flex items-center gap-2 whitespace-nowrap ${activeTab === 'storefront' ? 'bg-emerald-500/20 text-emerald-400' : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900'}`}
+        >
+          <Globe className="h-4 w-4" /> Website Settings
         </button>
       </div>
 
@@ -355,6 +398,83 @@ export default function SettingsPage() {
                   onChange={e => setFbAdAccessToken(e.target.value)} 
                   placeholder="EAABxxxxxxxxxxxxxxxxxxxx..." 
                   className="w-full bg-zinc-900 border border-zinc-800 text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-orange-500" 
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'storefront' && (
+          <div className="bg-zinc-950 border border-zinc-800 rounded-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="bg-gradient-to-r from-emerald-500/20 to-transparent p-6 border-b border-zinc-800">
+              <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                <Globe className="h-6 w-6 text-emerald-400" /> Website & Store Settings
+              </h3>
+              <p className="text-sm text-zinc-400 mt-2 max-w-2xl">
+                Manage global settings for your bondhumart.xyz storefront. Changes made here will reflect instantly on your live website.
+              </p>
+            </div>
+            
+            <div className="p-6 space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-xs font-medium text-zinc-400 mb-1">Facebook Pixel ID</label>
+                  <input 
+                    type="text" 
+                    value={pixelId} 
+                    onChange={e => setPixelId(e.target.value)} 
+                    placeholder="e.g. 123456789012345" 
+                    className="w-full bg-zinc-900 border border-zinc-800 text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-emerald-500" 
+                  />
+                  <p className="text-xs text-zinc-500 mt-1">Used for tracking page views, content views, add to cart, and purchases.</p>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-zinc-400 mb-1">Contact Phone Number</label>
+                  <input 
+                    type="text" 
+                    value={contactPhone} 
+                    onChange={e => setContactPhone(e.target.value)} 
+                    placeholder="e.g. 01700000000" 
+                    className="w-full bg-zinc-900 border border-zinc-800 text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-emerald-500" 
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-xs font-medium text-zinc-400 mb-1">Delivery Charge (Inside Dhaka)</label>
+                  <div className="relative">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500">৳</span>
+                    <input 
+                      type="number" 
+                      value={deliveryInside} 
+                      onChange={e => setDeliveryInside(e.target.value)} 
+                      className="w-full bg-zinc-900 border border-zinc-800 text-white rounded-xl pl-8 pr-4 py-3 text-sm focus:outline-none focus:border-emerald-500" 
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-zinc-400 mb-1">Delivery Charge (Outside Dhaka)</label>
+                  <div className="relative">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500">৳</span>
+                    <input 
+                      type="number" 
+                      value={deliveryOutside} 
+                      onChange={e => setDeliveryOutside(e.target.value)} 
+                      className="w-full bg-zinc-900 border border-zinc-800 text-white rounded-xl pl-8 pr-4 py-3 text-sm focus:outline-none focus:border-emerald-500" 
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-zinc-400 mb-1">Website Top Banner Text</label>
+                <input 
+                  type="text" 
+                  value={bannerText} 
+                  onChange={e => setBannerText(e.target.value)} 
+                  placeholder="e.g. Free shipping on all orders over ৳5000!" 
+                  className="w-full bg-zinc-900 border border-zinc-800 text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-emerald-500" 
                 />
               </div>
             </div>
