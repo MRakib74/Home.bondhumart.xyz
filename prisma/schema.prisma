@@ -72,7 +72,7 @@ model Order {
   
   // Dynamic columns for specific orders
   customData       Json?
-  status           String    @default("Pending") // Pending, Delivered, Cancelled, Returned
+  status           String    @default("Pending") // Pending, Confirmed, On Hold, Shipped, Delivered, Cancelled, Returning, Return Received
   cancelledReason  String?
   
   // Courier details
@@ -143,4 +143,34 @@ model StoreSettings {
   contactPhone     String?
   
   updatedAt        DateTime  @updatedAt
+}
+
+// 9. Blocked Customers (Fraud Prevention)
+model BlockedCustomer {
+  id             String    @id @default(cuid())
+  name           String?
+  phone          String    @unique
+  reason         String?   @db.Text
+  createdAt      DateTime  @default(now())
+}
+
+// 10. Notification Templates
+model NotificationTemplate {
+  id             String    @id @default(cuid())
+  type           String    @unique // e.g., 'Order Received', 'Order Confirmed', 'Order Cancelled'
+  isActive       Boolean   @default(true)
+  message        String    @db.Text
+  channel        String    @default("WhatsApp") // WhatsApp, SMS, Email
+  updatedAt      DateTime  @updatedAt
+}
+
+// 11. Message Logs (System outbound logs)
+model MessageLog {
+  id             String    @id @default(cuid())
+  phone          String
+  type           String    // WhatsApp, SMS, Email
+  status         String    // success, failed
+  content        String    @db.Text
+  error          String?   @db.Text
+  createdAt      DateTime  @default(now())
 }

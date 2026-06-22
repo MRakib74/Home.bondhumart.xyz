@@ -5,21 +5,20 @@ export async function sendOrderNotification(order: any, messageText: string, inv
   const instanceName = process.env.EVOLUTION_INSTANCE_NAME
   const apikey = process.env.EVOLUTION_API_KEY
   
-  const phone = order.phone.replace(/[^0-9]/g, '')
-  // Auto-format for BD
-  const formattedPhone = phone.startsWith('880') ? phone : (phone.startsWith('0') ? '88' + phone : '880' + phone)
+  const phone = order.phone || order.customer?.phone || ''
+  if (!phone) return
+
+  const cleanPhone = phone.replace(/[^0-9]/g, '')
+  const formattedPhone = cleanPhone.startsWith('880') ? cleanPhone : (cleanPhone.startsWith('0') ? '88' + cleanPhone : '880' + cleanPhone)
 
   let sentViaWhatsApp = false
+  let errorMsg = null
 
   if (evolutionUrl && instanceName && apikey) {
     try {
-      // 1. Check if number exists on WhatsApp
       const checkRes = await fetch(`${evolutionUrl}/chat/whatsappNumbers/${instanceName}`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "apikey": apikey
-        },
+        headers: { "Content-Type": "application/json", "apikey": apikey },
         body: JSON.stringify({ numbers: [formattedPhone] })
       })
 
@@ -30,14 +29,10 @@ export async function sendOrderNotification(order: any, messageText: string, inv
         if (exists) {
           const remoteJid = checkData[0].jid
 
-          // Send Invoice Document if exists
           if (invoicePdfUrl) {
             await fetch(`${evolutionUrl}/message/sendMedia/${instanceName}`, {
               method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                "apikey": apikey
-              },
+              headers: { "Content-Type": "application/json", "apikey": apikey },
               body: JSON.stringify({
                 number: remoteJid,
                 options: { delay: 1200, presence: "composing" },
@@ -45,18 +40,14 @@ export async function sendOrderNotification(order: any, messageText: string, inv
                   mediatype: "document",
                   caption: messageText,
                   media: invoicePdfUrl,
-                  fileName: `Invoice_Order_${order.bondhumartId}.pdf`
+                  fileName: `Invoice_Order_${order.bondhumartId || order.id}.pdf`
                 }
               })
             })
           } else {
-            // Send Text
             await fetch(`${evolutionUrl}/message/sendText/${instanceName}`, {
               method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                "apikey": apikey
-              },
+              headers: { "Content-Type": "application/json", "apikey": apikey },
               body: JSON.stringify({
                 number: remoteJid,
                 options: { delay: 1200, presence: "composing" },
@@ -66,16 +57,42 @@ export async function sendOrderNotification(order: any, messageText: string, inv
           }
 
           sentViaWhatsApp = true
+        } else {
+          errorMsg = 'No WhatsApp account found for this number.'
         }
+      } else {
+        errorMsg = `API Error: ${checkRes.status}`
       }
-    } catch (error) {
+    } catch (error: any) {
+      errorMsg = error.message
       console.error("Evolution API Check/Send Error:", error)
     }
+  } else {
+    errorMsg = 'Evolution API not configured in .env'
   }
 
-  // 2. Fallback to SMS if WhatsApp failed or not available
-  if (!sentViaWhatsApp) {
-    console.log(`WhatsApp not available for ${formattedPhone}. Falling back to SMS...`)
+  if (sentViaWhatsApp) {
+    await prisma.messageLog.create({
+      data: {
+        phone: formattedPhone,
+        type: 'WhatsApp',
+        status: 'success',
+        content: messageText,
+      }
+    })
+  } else {
+    // Log WhatsApp failure
+    await prisma.messageLog.create({
+      data: {
+        phone: formattedPhone,
+        type: 'WhatsApp',
+        status: 'failed',
+        content: messageText,
+        error: errorMsg || 'Unknown error'
+      }
+    })
+
+    // Try SMS Fallback
     await sendFallbackSMS(formattedPhone, messageText)
   }
 }
@@ -86,13 +103,20 @@ async function sendFallbackSMS(phone: string, text: string) {
   const smsSenderId = process.env.SMS_SENDER_ID
 
   if (!smsApiUrl || !smsApiKey) {
-    console.log("SMS Gateway not configured.")
+    await prisma.messageLog.create({
+      data: {
+        phone,
+        type: 'SMS',
+        status: 'failed',
+        content: text,
+        error: 'SMS Gateway not configured'
+      }
+    })
     return
   }
 
   try {
-    // Example using standard SMS Gateway format (can be adapted to BulkSMSBD, SMSQ etc.)
-    await fetch(smsApiUrl, {
+    const res = await fetch(smsApiUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -102,8 +126,36 @@ async function sendFallbackSMS(phone: string, text: string) {
         message: text
       })
     })
-    console.log(`SMS Fallback Sent to ${phone}`)
-  } catch (err) {
-    console.error("Failed to send fallback SMS:", err)
+
+    if (res.ok) {
+      await prisma.messageLog.create({
+        data: {
+          phone,
+          type: 'SMS',
+          status: 'success',
+          content: text
+        }
+      })
+    } else {
+      await prisma.messageLog.create({
+        data: {
+          phone,
+          type: 'SMS',
+          status: 'failed',
+          content: text,
+          error: `SMS Gateway returned ${res.status}`
+        }
+      })
+    }
+  } catch (err: any) {
+    await prisma.messageLog.create({
+      data: {
+        phone,
+        type: 'SMS',
+        status: 'failed',
+        content: text,
+        error: err.message || 'Network error'
+      }
+    })
   }
 }
