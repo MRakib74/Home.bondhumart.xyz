@@ -42,7 +42,7 @@ model Customer {
 // 2. Product Data
 model Product {
   id             String    @id @default(cuid())
-  bondhumartId   String    @unique // ID from the Laravel system
+  bondhumartId   String?   @unique // ID from the Laravel system
   name           String
   price          Float
   imageUrl       String?
@@ -60,7 +60,7 @@ model Product {
 // 3. Order Data
 model Order {
   id               String    @id @default(cuid())
-  bondhumartId     String    @unique // ID from the Laravel system
+  bondhumartId     String?   @unique // ID from the Laravel system
   customerId       String
   customer         Customer  @relation(fields: [customerId], references: [id])
   productId        String
