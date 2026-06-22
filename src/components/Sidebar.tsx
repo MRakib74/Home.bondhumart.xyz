@@ -20,7 +20,8 @@ import {
   MessageSquareText,
   ChevronDown,
   ChevronRight,
-  Menu, X
+  Menu, X,
+  Package, LayoutGrid, PanelTop, Tags, Star
 } from "lucide-react"
 
 type NavItem = {
@@ -52,6 +53,18 @@ const navigation: NavItem[] = [
           { name: 'Return Received', href: '/website-management/orders/return-received' },
         ]
       },
+      {
+        name: 'Product Manage',
+        icon: Package,
+        children: [
+          { name: 'Category', href: '/website-management/products/category' },
+          { name: 'Product', href: '/website-management/products/all' },
+          { name: 'Review', href: '/website-management/products/review' },
+          { name: 'Coupon', href: '/website-management/products/coupon' },
+        ]
+      },
+      { name: 'Page Design & Builder', href: '/website-management/page-builder', icon: LayoutGrid },
+      { name: 'Landing Page Builder', href: '/website-management/landing-page-builder', icon: PanelTop },
       { name: 'Blocked Fraud Customer', href: '/website-management/blocked', icon: ShieldAlert },
       { name: 'Notification & SMS', href: '/website-management/notifications', icon: BellRing },
       { name: 'Message Info', href: '/website-management/message-logs', icon: MessageSquareText },

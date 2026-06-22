@@ -46,15 +46,110 @@ model Product {
   name           String
   price          Float
   imageUrl       String?
-  category       String?
+  categoryName   String?   // Old category field
   stock          Int       @default(0)
   description    String?   @db.Text
   isAdActive     Boolean   @default(false) // Ad tracking
+  
+  // New Product Management fields
+  categoryId     String?
+  category       Category? @relation(fields: [categoryId], references: [id])
+  bundleOffers   Json?
+  media          Json?
+  aiSalesman     Json?
+  pageContent    Json?
+  extraSettings  Json?
   
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
   orders         Order[]
+  reviews        Review[]
+  coupons        Coupon[]  @relation("CouponToProduct")
+}
+
+// 12. Category
+model Category {
+  id          String     @id @default(cuid())
+  name        String
+  slug        String     @unique
+  parentId    String?
+  parent      Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children    Category[] @relation("CategoryHierarchy")
+  
+  products    Product[]
+  
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+}
+
+// 13. Review
+model Review {
+  id             String    @id @default(cuid())
+  productId      String
+  product        Product   @relation(fields: [productId], references: [id])
+  
+  customerName   String
+  customerImage  String?
+  rating         Int       @default(5)
+  comment        String    @db.Text
+  images         Json?     // Array of image URLs
+  
+  status         String    @default("Pending") // Pending, Approved, Rejected
+  adminCreated   Boolean   @default(false)
+  
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}
+
+// 14. Coupon
+model Coupon {
+  id             String    @id @default(cuid())
+  code           String    @unique
+  discountType   String    @default("Fixed") // Fixed, Percentage
+  discountValue  Float
+  minOrderAmount Float?
+  
+  isActive       Boolean   @default(true)
+  showOnLanding  Boolean   @default(false)
+  
+  products       Product[] @relation("CouponToProduct")
+  
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}
+
+// 15. Page Design & Builder (Main Site)
+model PageDesign {
+  id             String    @id @default(cuid())
+  type           String    @unique // Header, Footer, FrontPage, Checkout, ThankYou, AboutUs, ReturnPolicy, Terms, Privacy
+  content        Json?     // Grid builder blocks config
+  
+  isActive       Boolean   @default(true)
+  updatedAt      DateTime  @updatedAt
+}
+
+// 16. Landing Page Builder
+model LandingPage {
+  id             String    @id @default(cuid())
+  slug           String    @unique
+  title          String
+  
+  // Basic settings
+  productId      String?   // Product attached to this landing page
+  themeColor     String    @default("#319b03")
+  bgColor        String    @default("#F5F3FF")
+  deliveryInside Float     @default(60)
+  deliveryOutside Float    @default(120)
+  freeDelivery   Boolean   @default(false)
+  requirePhone   Boolean   @default(true)
+  isPublished    Boolean   @default(false)
+  
+  // Builder content
+  blocks         Json?     // Array of dragged-and-dropped section blocks
+  
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 }
 
 // 3. Order Data
