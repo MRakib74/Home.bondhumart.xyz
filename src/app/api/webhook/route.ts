@@ -8,7 +8,9 @@ export async function POST(req: Request) {
   try {
     // 1. Verify Secret Key to ensure the request is actually from Laravel
     const authHeader = req.headers.get("authorization")
-    if (authHeader !== `Bearer ${process.env.WEBHOOK_SECRET}`) {
+    const secret = process.env.WEBHOOK_SECRET || 'bondhumart_secret_123'
+    
+    if (authHeader !== `Bearer ${secret}`) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
