@@ -103,24 +103,36 @@ export default function CustomersPage() {
   // Column Reordering State
   const [columnsOrder, setColumnsOrder] = useState<string[]>(Object.keys(COLUMN_DEF))
 
-  // ====== localStorage: Load on mount ======
+  // ====== API: Load on mount ======
   useEffect(() => {
+    const fetchCustomers = async () => {
+      try {
+        const res = await fetch('/api/customers')
+        if (res.ok) {
+          const data = await res.json()
+          setCustomers(data)
+        }
+      } catch (e) {
+        console.error('Failed to fetch customers:', e)
+      } finally {
+        setIsLoaded(true)
+      }
+    }
+    
+    fetchCustomers()
+
     try {
-      const saved = localStorage.getItem('bondhu_customers')
-      if (saved) setCustomers(JSON.parse(saved))
       const savedCols = localStorage.getItem('bondhu_col_order')
       if (savedCols) setColumnsOrder(JSON.parse(savedCols))
     } catch (e) {}
-    setIsLoaded(true)
   }, [])
 
-  // ====== localStorage: Save on change ======
+  // ====== localStorage: Save column order only ======
   useEffect(() => {
     if (isLoaded) {
-      localStorage.setItem('bondhu_customers', JSON.stringify(customers))
       localStorage.setItem('bondhu_col_order', JSON.stringify(columnsOrder))
     }
-  }, [customers, columnsOrder, isLoaded])
+  }, [columnsOrder, isLoaded])
 
   // Custom Columns Filter State
   const [isFilterOpen, setIsFilterOpen] = useState(false)
@@ -207,9 +219,33 @@ export default function CustomersPage() {
       }
     })
 
-    setCustomers(prev => [...newCustomers, ...prev])
-    resetUploadState()
-    alert(`✅ ${newCustomers.length} জন কাস্টমার সফলভাবে '${uploadTargetSegment}' ট্যাবে আপলোড হয়েছে!`)
+    const processUpload = async () => {
+      try {
+        const res = await fetch('/api/customers', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ customers: newCustomers })
+        })
+        if (res.ok) {
+          // Refresh list
+          const fetchRes = await fetch('/api/customers')
+          if (fetchRes.ok) {
+            setCustomers(await fetchRes.json())
+          } else {
+            setCustomers(prev => [...newCustomers, ...prev])
+          }
+          resetUploadState()
+          alert(`✅ সফলভাবে '${uploadTargetSegment}' ট্যাবে আপলোড হয়েছে!`)
+        } else {
+          alert('Failed to upload to database.')
+        }
+      } catch (e) {
+        console.error(e)
+        alert('Error uploading customers.')
+      }
+    }
+    
+    processUpload()
   }
 
   const resetUploadState = () => {

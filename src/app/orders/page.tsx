@@ -78,15 +78,23 @@ export default function OrdersPage() {
   })
 
   useEffect(() => {
-    try {
-      const data = localStorage.getItem('bondhu_orders')
-      if (data) setOrders(JSON.parse(data))
-    } catch (e) { console.error(e) }
+    const fetchOrders = async () => {
+      try {
+        const res = await fetch('/api/orders')
+        if (res.ok) {
+          const data = await res.json()
+          setOrders(data)
+        }
+      } catch (e) {
+        console.error('Failed to fetch orders:', e)
+      }
+    }
+    fetchOrders()
   }, [])
 
   const saveOrders = (updated: OrderItem[]) => {
     setOrders(updated)
-    localStorage.setItem('bondhu_orders', JSON.stringify(updated))
+    // Removed localStorage sync; for full persistence, update/delete APIs would be needed for other actions
   }
 
   const filtered = orders.filter(o => o.status === activeTab && (
@@ -104,25 +112,54 @@ export default function OrdersPage() {
     else setSelectedIds(filtered.map(o => o.id))
   }
 
-  const handleAddOrder = () => {
+  const handleAddOrder = async () => {
     if (!nName || !nPhone || !nProduct || !nAmount) return alert('সব ফিল্ড পূরণ করুন!')
-    const newOrder: OrderItem = {
-      id: 'ORD-' + Date.now(),
-      customerName: nName,
-      phone: formatPhoneForCourier(nPhone),
-      address: nAddress,
-      district: nDistrict,
-      product: nProduct,
-      quantity: Number(nQty),
-      amount: Number(nAmount),
-      deliveryCharge: Number(nDelivery),
-      status: 'new',
-      source: 'Manual',
-      createdAt: new Date().toISOString()
+    
+    try {
+      const res = await fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          customerName: nName,
+          phone: formatPhoneForCourier(nPhone),
+          address: nAddress,
+          district: nDistrict,
+          product: nProduct,
+          quantity: Number(nQty),
+          amount: Number(nAmount),
+          deliveryCharge: Number(nDelivery),
+          status: 'new',
+          source: 'Manual'
+        })
+      })
+      
+      if (res.ok) {
+        const data = await res.json()
+        const newOrder: OrderItem = {
+          id: data.orderId,
+          customerName: nName,
+          phone: formatPhoneForCourier(nPhone),
+          address: nAddress,
+          district: nDistrict,
+          product: nProduct,
+          quantity: Number(nQty),
+          amount: Number(nAmount),
+          deliveryCharge: Number(nDelivery),
+          status: 'new',
+          source: 'Manual',
+          createdAt: new Date().toISOString()
+        }
+        setOrders(prev => [newOrder, ...prev])
+        setShowAddModal(false)
+        setNName(''); setNPhone(''); setNAddress(''); setNDistrict(''); setNProduct(''); setNQty('1'); setNAmount(''); setNDelivery('80')
+        alert('Order created successfully in database!')
+      } else {
+        alert('Failed to create order in database.')
+      }
+    } catch (err) {
+      console.error(err)
+      alert('Error creating order.')
     }
-    saveOrders([newOrder, ...orders])
-    setShowAddModal(false)
-    setNName(''); setNPhone(''); setNAddress(''); setNDistrict(''); setNProduct(''); setNQty('1'); setNAmount(''); setNDelivery('80')
   }
 
   // --- EXCEL/CSV IMPORT LOGIC ---
