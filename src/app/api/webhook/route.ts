@@ -35,13 +35,24 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ success: true }, { status: 200 })
 
-  } catch (error) {
+  } catch (error: any) {
+    if (error.message === "BLOCKED_CUSTOMER") {
+      return NextResponse.json({ success: false, error: "BLOCKED" }, { status: 403 })
+    }
     console.error("Webhook Error:", error)
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 })
   }
 }
 
 async function handleNewOrder(data: any) {
+  // Check if customer is blocked
+  const isBlocked = await prisma.blockedCustomer.findUnique({
+    where: { phone: data.customer.phone }
+  })
+  if (isBlocked) {
+    throw new Error("BLOCKED_CUSTOMER")
+  }
+
   // Extract customer and order data
   // Using upsert so if customer exists, we update, else we create
   const customer = await prisma.customer.upsert({
@@ -74,6 +85,14 @@ async function handleNewOrder(data: any) {
       bondhumartId: data.product_id.toString(),
       name: "Product #" + data.product_id,
       price: data.amount,
+    }
+  })
+
+  // Delete any Incomplete draft orders for this customer
+  await prisma.order.deleteMany({
+    where: {
+      customerId: customer.id,
+      status: 'Incomplete'
     }
   })
 
