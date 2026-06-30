@@ -6,14 +6,17 @@ export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url)
     const status = searchParams.get('status')
+    const idsParam = searchParams.get('ids')
     
-    let whereClause = {}
-    if (status && status !== 'all') {
-      whereClause = {
-        status: {
-          equals: status,
-          mode: 'insensitive'
-        }
+    let whereClause: any = {}
+    
+    if (idsParam) {
+      const idsArray = idsParam.split(',').map(id => id.trim())
+      whereClause.id = { in: idsArray }
+    } else if (status && status !== 'all') {
+      whereClause.status = {
+        equals: status,
+        mode: 'insensitive'
       }
     }
 

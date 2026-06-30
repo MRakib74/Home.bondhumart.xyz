@@ -109,6 +109,78 @@ export default function OrderManagePage() {
     }
   }
 
+  const handleDispatch = async () => {
+    if (selectedIds.length === 0) return alert('অর্ডার সিলেক্ট করুন!');
+    
+    // Read courier config
+    let configData;
+    try {
+      configData = JSON.parse(localStorage.getItem('bondhu_courier_config') || '{}');
+    } catch (e) {}
+
+    if (!configData || !configData.defaultCourier) {
+      alert("দয়া করে Courier Auto-Entry পেজ থেকে কুরিয়ার এপিআই সেটআপ করুন।");
+      return;
+    }
+
+    const courierId = configData.defaultCourier;
+    const courierObj = configData.couriers?.find((c: any) => c.id === courierId);
+    
+    if (!courierObj || !courierObj.apiKey) {
+      alert(`${courierObj?.name || courierId} এর API Key সেট করা নেই!`);
+      return;
+    }
+
+    // Get selected order details
+    const ordersToDispatch = orders.filter(o => selectedIds.includes(o.id));
+    
+    // Map them for the proxy API
+    const payloadOrders = ordersToDispatch.map(o => ({
+      id: o.bondhumartId || o.id,
+      customerName: o.customer?.name,
+      phone: o.customer?.phone,
+      address: o.customer?.address,
+      district: o.customer?.district,
+      amount: o.amount,
+      deliveryCharge: o.deliveryCharge,
+      product: o.product?.name,
+      quantity: o.quantity
+    }));
+
+    setIsProcessing(true);
+    try {
+      const res = await fetch(`/api/courier/${courierId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          apiKey: courierObj.apiKey,
+          secretKey: courierObj.secretKey,
+          baseUrl: courierObj.baseUrl,
+          orders: payloadOrders
+        })
+      });
+      
+      const data = await res.json();
+      if (res.ok && data.success) {
+        alert(`✅ ${data.processed} টি অর্ডার সফলভাবে কুরিয়ারে পাঠানো হয়েছে!`);
+        // Update their status to Shipped in DB
+        await fetch('/api/website-management/orders', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'status_change', orderIds: selectedIds, status: 'Shipped' })
+        });
+        fetchOrders();
+        setSelectedIds([]);
+      } else {
+        alert(`❌ এরর: ${data.error || 'Failed to dispatch'}`);
+      }
+    } catch (e) {
+      alert('নেটওয়ার্ক এরর বা API কল ফেইল করেছে');
+    } finally {
+      setIsProcessing(false);
+    }
+  }
+
   const handleDelete = async () => {
     if (selectedIds.length === 0) return alert('অর্ডার সিলেক্ট করুন!')
     if (!confirm(`${selectedIds.length}টি অর্ডার ডিলিট করতে চান?`)) return
@@ -327,6 +399,16 @@ export default function OrderManagePage() {
               <Download className="h-3.5 w-3.5" /> CSV ডাউনলোড
             </button>
             <button 
+              onClick={() => {
+                if (selectedIds.length === 0) return alert('অর্ডার সিলেক্ট করুন!')
+                window.open(`/print/invoice?ids=${selectedIds.join(',')}`, '_blank')
+              }}
+              disabled={selectedIds.length === 0}
+              className="bg-purple-500/10 text-purple-400 border border-purple-500/20 hover:bg-purple-500/20 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 disabled:opacity-40"
+            >
+              <FileText className="h-3.5 w-3.5" /> Print Invoices
+            </button>
+            <button 
               onClick={() => handleStatusChange('Confirmed')}
               disabled={isProcessing || selectedIds.length === 0}
               className="bg-blue-500/10 text-blue-400 border border-blue-500/20 hover:bg-blue-500/20 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 disabled:opacity-40"
@@ -334,7 +416,7 @@ export default function OrderManagePage() {
               <CheckCircle className="h-3.5 w-3.5" /> Confirm & Notify
             </button>
             <button 
-              onClick={() => handleStatusChange('Shipped')}
+              onClick={handleDispatch}
               disabled={isProcessing || selectedIds.length === 0}
               className="bg-orange-500/10 text-orange-400 border border-orange-500/20 hover:bg-orange-500/20 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 disabled:opacity-40"
             >
