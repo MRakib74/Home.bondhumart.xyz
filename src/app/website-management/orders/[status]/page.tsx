@@ -30,6 +30,7 @@ const TABS = [
   { id: 'cancelled', label: 'Cancelled' },
   { id: 'returning', label: 'Returning' },
   { id: 'return-received', label: 'Return Received' },
+  { id: 'incomplete', label: 'Incomplete' },
 ]
 
 const STATUS_FLOW = ['Pending', 'Confirmed', 'Shipped', 'Delivered']
@@ -355,6 +356,7 @@ export default function OrderManagePage() {
               <option value="Cancelled">Cancelled</option>
               <option value="Returning">Returning</option>
               <option value="Return Received">Return Received</option>
+              <option value="Incomplete">Incomplete</option>
             </select>
           </div>
 
