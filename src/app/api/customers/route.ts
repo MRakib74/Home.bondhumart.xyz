@@ -123,3 +123,64 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Failed to import customers' }, { status: 500 })
   }
 }
+
+export async function PUT(req: Request) {
+  try {
+    const body = await req.json()
+    const { id, name, phone, email, district, thana, address } = body
+
+    if (!id) {
+      return NextResponse.json({ error: 'Customer ID required' }, { status: 400 })
+    }
+
+    await prisma.customer.update({
+      where: { id },
+      data: { name, phone, email, district, thana, address }
+    })
+
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error('Error updating customer:', error)
+    return NextResponse.json({ error: 'Failed to update customer' }, { status: 500 })
+  }
+}
+
+export async function DELETE(req: Request) {
+  try {
+    const { searchParams } = new URL(req.url)
+    const idsStr = searchParams.get('ids')
+
+    if (!idsStr) {
+      return NextResponse.json({ error: 'Customer IDs required' }, { status: 400 })
+    }
+
+    const ids = idsStr.split(',')
+
+    // We must handle related orders and chatLogs to safely delete the customer
+    // Find all orders for these customers
+    const orders = await prisma.order.findMany({ where: { customerId: { in: ids } } })
+    const orderIds = orders.map(o => o.id)
+
+    if (orderIds.length > 0) {
+      // Delete associated courier bookings first
+      await prisma.courierBooking.deleteMany({ where: { orderId: { in: orderIds } } })
+      // Delete orders
+      await prisma.order.deleteMany({ where: { id: { in: orderIds } } })
+    }
+
+    // Delete chat logs associated by phone
+    const customers = await prisma.customer.findMany({ where: { id: { in: ids } } })
+    const phones = customers.map(c => c.phone).filter(Boolean)
+    if (phones.length > 0) {
+      await prisma.chatLog.deleteMany({ where: { customerPhone: { in: phones } } })
+    }
+
+    // Finally delete customers
+    await prisma.customer.deleteMany({ where: { id: { in: ids } } })
+
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error('Error deleting customers:', error)
+    return NextResponse.json({ error: 'Failed to delete customers' }, { status: 500 })
+  }
+}

@@ -258,10 +258,20 @@ export default function CustomersPage() {
     setColMap({ name: "", phone: "", address: "", product: "", orderId: "", deliveryCharge: "", totalSpent: "", date: "" })
   }
 
-  const handleDeleteSelected = () => {
+  const handleDeleteSelected = async () => {
     if (confirm(`আপনি কি নিশ্চিত যে ${selectedIds.length} জন কাস্টমারকে ডিলিট করতে চান?`)) {
-      setCustomers(prev => prev.filter(c => !selectedIds.includes(c.id)))
-      setSelectedIds([])
+      try {
+        const res = await fetch(`/api/customers?ids=${selectedIds.join(',')}`, { method: 'DELETE' })
+        if (res.ok) {
+          setCustomers(prev => prev.filter(c => !selectedIds.includes(c.id)))
+          setSelectedIds([])
+        } else {
+          alert('Failed to delete customers.')
+        }
+      } catch (err) {
+        console.error(err)
+        alert('Error deleting customers.')
+      }
     }
   }
 
@@ -271,10 +281,24 @@ export default function CustomersPage() {
     setIsEditingDetails(false)
   }
 
-  const saveCustomerDetails = () => {
-    setCustomers(prev => prev.map(c => c.id === selectedCustomer.id ? detailsForm : c))
-    setSelectedCustomer(detailsForm)
-    setIsEditingDetails(false)
+  const saveCustomerDetails = async () => {
+    try {
+      const res = await fetch('/api/customers', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(detailsForm)
+      })
+      if (res.ok) {
+        setCustomers(prev => prev.map(c => c.id === selectedCustomer.id ? detailsForm : c))
+        setSelectedCustomer(detailsForm)
+        setIsEditingDetails(false)
+      } else {
+        alert('Failed to update customer details.')
+      }
+    } catch (err) {
+      console.error(err)
+      alert('Error saving customer details.')
+    }
   }
 
   const filteredCustomers = customers.filter(c => {

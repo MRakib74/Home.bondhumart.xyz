@@ -205,11 +205,10 @@ export default function OrdersPage() {
     }
   }
 
-  const handleProcessMappedData = () => {
+  const handleProcessMappedData = async () => {
     const newOrders = parsedData.map((row, index) => {
       const rawPhone = colMap.phone ? row[colMap.phone] : ""
       return {
-        id: 'IMP-' + Date.now() + '-' + index,
         customerName: colMap.name ? String(row[colMap.name] || "Unknown") : "Unknown",
         phone: formatPhoneForCourier(rawPhone),
         address: colMap.address ? String(row[colMap.address] || "") : "",
@@ -218,15 +217,31 @@ export default function OrdersPage() {
         quantity: colMap.quantity ? Number(row[colMap.quantity]) || 1 : 1,
         amount: colMap.amount ? Number(row[colMap.amount]) || 0 : 0,
         deliveryCharge: colMap.delivery && row[colMap.delivery] !== undefined ? Number(row[colMap.delivery]) : 0,
-        status: 'confirmed' as const, // Imported orders go straight to confirmed
-        source: 'Website Import',
-        createdAt: new Date().toISOString()
+        status: 'confirmed', // Imported orders go straight to confirmed
+        source: 'Website Import'
       }
     }).filter(o => o.phone && o.phone !== "No Phone")
 
     if (newOrders.length > 0) {
-      saveOrders([...newOrders, ...orders])
-      alert(`✅ ${newOrders.length} টি অর্ডার সফলভাবে "Confirmed Orders"-এ ইম্পোর্ট হয়েছে!`)
+      try {
+        const res = await fetch('/api/orders', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ orders: newOrders })
+        })
+        if (res.ok) {
+          const fetchRes = await fetch('/api/orders')
+          if (fetchRes.ok) {
+            setOrders(await fetchRes.json())
+          }
+          alert(`✅ ${newOrders.length} টি অর্ডার সফলভাবে "Confirmed Orders"-এ ইম্পোর্ট হয়েছে!`)
+        } else {
+          alert('Failed to import orders to database.')
+        }
+      } catch (err) {
+        console.error(err)
+        alert('Error importing orders.')
+      }
     }
 
     setIsUploadModalOpen(false)
@@ -250,21 +265,47 @@ export default function OrdersPage() {
     setIsEditModalOpen(true)
   }
 
-  const saveEditedOrder = () => {
+  const saveEditedOrder = async () => {
     if (!selectedOrder) return
-    const updated = orders.map(o => o.id === selectedOrder.id ? {
-      ...o,
-      customerName: eName,
-      phone: formatPhoneForCourier(ePhone),
-      address: eAddress,
-      district: eDistrict,
-      product: eProduct,
-      quantity: Number(eQty),
-      amount: Number(eAmount),
-      deliveryCharge: Number(eDelivery)
-    } : o)
-    saveOrders(updated)
-    setIsEditModalOpen(false)
+    try {
+      const res = await fetch('/api/orders', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'update_single',
+          orderId: selectedOrder.id,
+          customerName: eName,
+          phone: formatPhoneForCourier(ePhone),
+          address: eAddress,
+          district: eDistrict,
+          product: eProduct,
+          quantity: Number(eQty),
+          amount: Number(eAmount),
+          deliveryCharge: Number(eDelivery)
+        })
+      })
+      
+      if (res.ok) {
+        const updated = orders.map(o => o.id === selectedOrder.id ? {
+          ...o,
+          customerName: eName,
+          phone: formatPhoneForCourier(ePhone),
+          address: eAddress,
+          district: eDistrict,
+          product: eProduct,
+          quantity: Number(eQty),
+          amount: Number(eAmount),
+          deliveryCharge: Number(eDelivery)
+        } : o)
+        saveOrders(updated)
+        setIsEditModalOpen(false)
+      } else {
+        alert('Failed to save order details in database.')
+      }
+    } catch (err) {
+      console.error(err)
+      alert('Error updating order.')
+    }
   }
 
   const getInvoiceConfig = () => {
@@ -465,28 +506,63 @@ export default function OrdersPage() {
     }, 500);
   }
 
-  const deleteSingleOrder = (id: string) => {
+  const deleteSingleOrder = async (id: string) => {
     if (confirm('আপনি কি এই অর্ডারটি ডিলিট করতে চান?')) {
-      const updated = orders.filter(o => o.id !== id)
-      saveOrders(updated)
-      setIsEditModalOpen(false)
+      try {
+        const res = await fetch(`/api/orders?id=${id}`, { method: 'DELETE' })
+        if (res.ok) {
+          const updated = orders.filter(o => o.id !== id)
+          saveOrders(updated)
+          setIsEditModalOpen(false)
+        } else {
+          alert('Failed to delete order.')
+        }
+      } catch (err) {
+        console.error(err)
+      }
     }
   }
 
-  const handleDeleteSelected = () => {
+  const handleDeleteSelected = async () => {
     if (selectedIds.length === 0) return alert('অর্ডার সিলেক্ট করুন!')
     if (confirm(`আপনি কি নিশ্চিত যে ${selectedIds.length} টি অর্ডার ডিলিট করতে চান?`)) {
-      const updated = orders.filter(o => !selectedIds.includes(o.id))
-      saveOrders(updated)
-      setSelectedIds([])
+      try {
+        const res = await fetch(`/api/orders?ids=${selectedIds.join(',')}`, { method: 'DELETE' })
+        if (res.ok) {
+          const updated = orders.filter(o => !selectedIds.includes(o.id))
+          saveOrders(updated)
+          setSelectedIds([])
+        } else {
+          alert('Failed to delete orders.')
+        }
+      } catch (err) {
+        console.error(err)
+      }
     }
   }
 
-  const moveToConfirmed = () => {
+  const moveToConfirmed = async () => {
     if (selectedIds.length === 0) return alert('অর্ডার সিলেক্ট করুন!')
-    const updated = orders.map(o => selectedIds.includes(o.id) ? { ...o, status: 'confirmed' as const } : o)
-    saveOrders(updated)
-    setSelectedIds([])
+    try {
+      const res = await fetch('/api/orders', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'update_status_bulk',
+          orderIds: selectedIds,
+          status: 'confirmed'
+        })
+      })
+      if (res.ok) {
+        const updated = orders.map(o => selectedIds.includes(o.id) ? { ...o, status: 'confirmed' as const } : o)
+        saveOrders(updated)
+        setSelectedIds([])
+      } else {
+        alert('Failed to update status in database.')
+      }
+    } catch (err) {
+      console.error(err)
+    }
   }
 
   const sendToCourier = () => {
@@ -543,6 +619,7 @@ export default function OrdersPage() {
             }
             return o
           })
+          await fetch('/api/orders', { method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ action: 'update_courier_bulk', ordersData: updated.filter(o => selectedIds.includes(o.id)) }) })
           saveOrders(updated)
           setSelectedIds([])
           setShowCourierModal(false)
@@ -579,6 +656,7 @@ export default function OrdersPage() {
         }
         return o
       })
+      await fetch('/api/orders', { method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ action: 'update_courier_bulk', ordersData: updated.filter(o => selectedIds.includes(o.id)) }) })
       saveOrders(updated)
       setSelectedIds([])
       setShowCourierModal(false)
@@ -634,6 +712,7 @@ export default function OrdersPage() {
           }
           return o
         })
+        await fetch('/api/orders', { method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ action: 'update_courier_bulk', ordersData: updated.filter(o => selectedIds.includes(o.id)) }) })
         saveOrders(updated)
         setSelectedIds([])
         setShowCourierModal(false)
