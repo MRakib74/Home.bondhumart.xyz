@@ -84,7 +84,7 @@ export async function POST(req: Request) {
       // Try to extract consignment ID if Pathao returns it immediately, otherwise mock/generate one for tracking state
       const consignmentId = data.data?.data?.[i]?.consignment_id || data.data?.[i]?.consignment_id || '';
       return {
-        orderId: order.id,
+        orderId: order.dbId || order.id,
         tracking_code: consignmentId || 'PATHAO-' + Date.now().toString() + i,
         consignment_id: consignmentId,
         status: 'success'

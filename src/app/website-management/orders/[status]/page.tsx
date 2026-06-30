@@ -134,9 +134,10 @@ export default function OrderManagePage() {
     // Get selected order details
     const ordersToDispatch = orders.filter(o => selectedIds.includes(o.id));
     
-    // Map them for the proxy API
+    // Map them for the proxy API (passing dbId to ensure we know which one succeeded)
     const payloadOrders = ordersToDispatch.map(o => ({
       id: o.bondhumartId || o.id,
+      dbId: o.id,
       customerName: o.customer?.name,
       phone: o.customer?.phone,
       address: o.customer?.address,
@@ -161,14 +162,27 @@ export default function OrderManagePage() {
       });
       
       const data = await res.json();
+      
       if (res.ok && data.success) {
-        alert(`✅ ${data.processed} টি অর্ডার সফলভাবে কুরিয়ারে পাঠানো হয়েছে!`);
-        // Update their status to Shipped in DB
-        await fetch('/api/website-management/orders', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'status_change', orderIds: selectedIds, status: 'Shipped' })
-        });
+        if (data.processed > 0) {
+          alert(`✅ ${data.processed} টি অর্ডার সফলভাবে কুরিয়ারে পাঠানো হয়েছে!`);
+          
+          // Only update the status for orders that ACTUALLY succeeded
+          const successfulDbIds = data.results.map((r: any) => r.orderId);
+          
+          if (successfulDbIds.length > 0) {
+            await fetch('/api/website-management/orders', {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ action: 'status_change', orderIds: successfulDbIds, status: 'Shipped' })
+            });
+          }
+        }
+        
+        if (data.failed > 0) {
+          alert(`❌ ${data.failed} টি অর্ডার কুরিয়ারে পাঠানো যায়নি। (হয়তো ঠিকানা বা তথ্যে ভুল আছে)`);
+        }
+        
         fetchOrders();
         setSelectedIds([]);
       } else {

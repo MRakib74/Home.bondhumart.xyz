@@ -47,20 +47,20 @@ export async function POST(req: Request) {
 
         if (response.ok && data.status === 200) {
           results.push({
-            orderId: order.id,
+            orderId: order.dbId || order.id,
             tracking_code: data.consignment?.tracking_code || 'TRACK-' + Date.now(),
             consignment_id: data.consignment?.consignment_id,
             status: 'success'
           });
         } else {
           errors.push({
-            orderId: order.id,
+            orderId: order.dbId || order.id,
             error: data.message || JSON.stringify(data.errors) || 'Failed to create order'
           });
         }
       } catch (err: any) {
         errors.push({
-          orderId: order.id,
+          orderId: order.dbId || order.id,
           error: err.message
         });
       }
