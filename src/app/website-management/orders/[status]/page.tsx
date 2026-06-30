@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
-import { ShoppingCart, Search, Download, Trash2, CheckCircle, Truck, RefreshCw, Loader2, Send, Plus, Edit, X, Eye, Package, Clock, MapPin, Phone, User } from "lucide-react"
+import { ShoppingCart, Search, Download, Trash2, CheckCircle, Truck, RefreshCw, Loader2, Send, Plus, Edit, X, Eye, Package, Clock, MapPin, Phone, User, FileText } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface Order {
