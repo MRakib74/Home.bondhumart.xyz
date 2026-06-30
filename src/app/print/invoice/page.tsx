@@ -119,7 +119,7 @@ function InvoicePrintContent() {
           key={index} 
           className="page-break"
           style={{
-            height: \`calc((100vh - 10mm - (\${rowsPerPage - 1} * 2mm)) / \${rowsPerPage})\`,
+            height: `calc((100vh - 10mm - (${rowsPerPage - 1} * 2mm)) / ${rowsPerPage})`,
             border: isBW ? '1px solid #000' : '1px dashed #ccc',
             display: 'flex',
             flexDirection: 'column',
@@ -204,7 +204,7 @@ function InvoicePrintContent() {
               )}
               <div style={{ fontSize: isCompact ? '8px' : '9.5px', marginTop: '2px', lineHeight: 1.25 }}>
                 {order.customer?.address}
-                {order.customer?.district ? \`, \${order.customer.district}\` : ''}
+                {order.customer?.district ? `, ${order.customer.district}` : ''}
               </div>
             </div>
           </div>
